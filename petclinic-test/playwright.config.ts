@@ -27,7 +27,12 @@ export default defineConfig({
     // serve.options.host to 127.0.0.1, since ng's default ("localhost") resolves
     // to ::1 on macOS and would bind IPv6-only — refusing every request here.
     baseURL: process.env.BASE_URL || 'http://127.0.0.1:4200',
-    trace: 'on-first-retry',
+    // `on-first-retry` is the right default for CI, and it is why a green local run
+    // records nothing at all. `PW_TRACE=on` is how a run that is meant to be *read*
+    // asks for a trace per test: /human-review harvests them out of the HTML report
+    // below and carries them onto the review page, where the Tests tab steps through
+    // each one (petclinic's human-review.json, steps.traces).
+    trace: (process.env.PW_TRACE as 'on' | 'off' | 'on-first-retry') || 'on-first-retry',
     screenshot: 'only-on-failure',
     // Failures are the only videos worth keeping in a normal run. `PW_VIDEO=on` exists for
     // review-time recording (.claude/skills/human-review/scripts/record-feature-video.sh), where the point is to film a

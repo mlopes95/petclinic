@@ -38,13 +38,25 @@
       "//13": "reports the city colours by: everything, and the browser alone.",
       "tests": [
         "cd petclinic-backend && mvn -o test -Dmaven.test.failure.ignore=true",
-        "cd petclinic-test && JACOCO_E2E=1 npm test",
+        "cd petclinic-test && JACOCO_E2E=1 PW_TRACE=on npm test",
         "cd petclinic-backend && mvn -o -q jacoco:merge@merge-all jacoco:report@report-all jacoco:report@report-acceptance"
       ],
       "out": "petclinic-backend/docs/generated/codecity",
       "title": "Code City",
       "acceptance": "petclinic-backend/target/site/jacoco-acceptance/jacoco.xml",
       "baseline": "petclinic-backend/docs/generated/codecity/coverage-baseline.tsv"
+    },
+    "traces": {
+      "//": "Playwright's own recording of each test in the acceptance run, carried onto",
+      "//2": "the page: the Tests tab steps through what a test did, action by action,",
+      "//3": "with the page either side of it, the console and the network.",
+      "//4": "Nothing is run from here on purpose — the suite above (city.tests) is the",
+      "//5": "one harvested, and PW_TRACE=on there is what makes it record. Running it a",
+      "//6": "second time would double the longest step on the page for a second,",
+      "//7": "differently-flaky opinion about the same branch.",
+      "report": "petclinic-test/test-results/playwright-report",
+      "projectDir": "petclinic-test",
+      "limit": 12
     },
     "video": {
       "out": ".human-review/assets/feature.webm"
