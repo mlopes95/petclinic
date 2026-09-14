@@ -4,6 +4,5 @@ import { Pet } from '../pets/pet';
 export type Visit = Omit<components['schemas']['VisitDto'], 'date' | 'petId'> & {
   date: string;
   petId?: number;
-  vetId?: number | null;
   pet: Pet;
 };

@@ -41,21 +41,11 @@ public class VisitDto {
     @Schema(accessMode = Schema.AccessMode.READ_ONLY, description = "Last name of the owner (server-populated).")
     private @Nullable String ownerLastName;
 
-    @Min(0)
-    @Schema(example = "1", description = "The ID of the vet that attended the visit.")
-    private @Nullable Integer vetId;
-
-    @Schema(accessMode = Schema.AccessMode.READ_ONLY, description = "First name of the vet (server-populated).")
-    private @Nullable String vetFirstName;
-
-    @Schema(accessMode = Schema.AccessMode.READ_ONLY, description = "Last name of the vet (server-populated).")
-    private @Nullable String vetLastName;
-
-    public @Nullable LocalDate getDate() {
+    public LocalDate getDate() {
         return date;
     }
 
-    public void setDate(@Nullable LocalDate date) {
+    public void setDate(LocalDate date) {
         this.date = date;
     }
 
@@ -83,59 +73,35 @@ public class VisitDto {
         this.petId = petId;
     }
 
-    public @Nullable String getPetName() {
+    public String getPetName() {
         return petName;
     }
 
-    public void setPetName(@Nullable String petName) {
+    public void setPetName(String petName) {
         this.petName = petName;
     }
 
-    public @Nullable Integer getOwnerId() {
+    public Integer getOwnerId() {
         return ownerId;
     }
 
-    public void setOwnerId(@Nullable Integer ownerId) {
+    public void setOwnerId(Integer ownerId) {
         this.ownerId = ownerId;
     }
 
-    public @Nullable String getOwnerFirstName() {
+    public String getOwnerFirstName() {
         return ownerFirstName;
     }
 
-    public void setOwnerFirstName(@Nullable String ownerFirstName) {
+    public void setOwnerFirstName(String ownerFirstName) {
         this.ownerFirstName = ownerFirstName;
     }
 
-    public @Nullable String getOwnerLastName() {
+    public String getOwnerLastName() {
         return ownerLastName;
     }
 
-    public void setOwnerLastName(@Nullable String ownerLastName) {
+    public void setOwnerLastName(String ownerLastName) {
         this.ownerLastName = ownerLastName;
-    }
-
-    public @Nullable Integer getVetId() {
-        return vetId;
-    }
-
-    public void setVetId(@Nullable Integer vetId) {
-        this.vetId = vetId;
-    }
-
-    public @Nullable String getVetFirstName() {
-        return vetFirstName;
-    }
-
-    public void setVetFirstName(@Nullable String vetFirstName) {
-        this.vetFirstName = vetFirstName;
-    }
-
-    public @Nullable String getVetLastName() {
-        return vetLastName;
-    }
-
-    public void setVetLastName(@Nullable String vetLastName) {
-        this.vetLastName = vetLastName;
     }
 }

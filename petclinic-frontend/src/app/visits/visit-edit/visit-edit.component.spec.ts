@@ -16,8 +16,6 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import Spy = jasmine.Spy;
 import {OwnerService} from '../../owners/owner.service';
 import {PetService} from '../../pets/pet.service';
-import {VetService} from '../../vets/vet.service';
-import {Vet} from '../../vets/vet';
 
 const visitEditOwner = { id: 1, firstName: 'George', lastName: 'Franklin', address: '110 W. Liberty St.', city: 'Madison', telephone: '6085551023', pets: [] };
 
@@ -42,13 +40,6 @@ class PetServiceStub {
   }
 }
 
-
-class VetServiceStub {
-  getVets(): Observable<Vet[]> {
-    return of([{id: 1, firstName: 'James', lastName: 'Carter', specialties: []}]);
-  }
-}
-
 describe('VisitEditComponent', () => {
   let component: VisitEditComponent;
   let fixture: ComponentFixture<VisitEditComponent>;
@@ -66,7 +57,6 @@ describe('VisitEditComponent', () => {
         {provide: VisitService, useClass: VisitServiceStub},
         {provide: OwnerService, useClass: OwnerServiceStub},
         {provide: PetService, useClass: PetServiceStub},
-        {provide: VetService, useClass: VetServiceStub},
         {provide: Router, useClass: RouterStub},
         {provide: ActivatedRoute, useClass: ActivatedRouteStub}
       ]

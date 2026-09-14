@@ -31,7 +31,6 @@ test.describe('Visits Page', () => {
       description: v.description,
       petName: v.petName ?? '',
       ownerFullName: `${v.ownerFirstName ?? ''} ${v.ownerLastName ?? ''}`.trim(),
-      vetName: v.vetFirstName ? `${v.vetFirstName} ${v.vetLastName}` : '—',
     }));
 
     const visitsPage = new VisitsPage(page);

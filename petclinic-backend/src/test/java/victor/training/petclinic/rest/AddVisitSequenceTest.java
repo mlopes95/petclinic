@@ -107,60 +107,6 @@ class AddVisitSequenceTest {
                         "No owner with a pet in the seeded data — did db/seed/R__seed.sql change?"));
     }
 
-    /**
-     * The branch's own feature, one layer below the browser: the same journey as the
-     * "Add a visit attended by a vet" scenario in add-visit.spec.ts and the
-     * "A visit remembers the vet who attended it" scenario in add-visit.feature.
-     * <p>
-     * Its whole point on the diagram is the extra boundary crossing the vet link costs —
-     * a GET /api/vets to populate the dropdown, a vetId travelling on the POST, and the
-     * lookup that resolves it before the visit is saved. That is what the delta beside
-     * this file draws in green, and none of it is visible from the unit tests.
-     * <p>
-     * VET_ADMIN alongside OWNER_ADMIN because the vet list is behind it: the receptionist
-     * booking the visit is exactly the user who has to be allowed to read /api/vets, so a
-     * test that skipped the list would also skip the authorisation question it raises.
-     */
-    @Test
-    @Order(2)
-    @WithMockUser(roles = {"OWNER_ADMIN", "VET_ADMIN"})
-    void remembersTheVetWhoAttendedIt() throws Exception {
-        given("an owner with at least one pet exists");
-        JsonNode owner = anOwnerWithAPet();
-        int ownerId = owner.path("id").asInt();
-        int petId = owner.path("pets").get(0).path("id").asInt();
-
-        and("the clinic has a vet who can attend it");
-        JsonNode vet = theFirstVet();
-        int vetId = vet.path("id").asInt();
-        String vetName = vet.path("firstName").asText() + " " + vet.path("lastName").asText();
-
-        when("a visit is booked for that pet with that vet attending");
-        String description = "Annual check-up " + System.currentTimeMillis();
-        call(mockMvc, post("/api/owners/{ownerId}/pets/{petId}/visits", ownerId, petId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(
-                        Map.of("date", VISIT_DATE, "description", description, "vetId", vetId))))
-                .andExpect(status().isCreated());
-
-        then("that pet's history shows the visit was attended by that vet");
-        JsonNode reloaded = json(call(mockMvc, get("/api/owners/{ownerId}", ownerId))
-                .andExpect(status().isOk()));
-        JsonNode visit = visitDescribed(reloaded, description);
-        // The name, not only the id: the id proves the column was written, the two names
-        // prove the read path joins the vet back in — which is the half the UI depends on.
-        assertThat(visit.path("vetId").asInt()).isEqualTo(vetId);
-        assertThat(visit.path("vetFirstName").asText() + " " + visit.path("vetLastName").asText())
-                .isEqualTo(vetName);
-    }
-
-    /** The Java twin of the spec's `select_first_vet_in_visit_form`, over the list the dropdown loads. */
-    private JsonNode theFirstVet() throws Exception {
-        JsonNode vets = json(call(mockMvc, get("/api/vets")).andExpect(status().isOk()));
-        assertThat(vets).as("the seeded vets").isNotEmpty();
-        return vets.get(0);
-    }
-
     /** The one visit this scenario booked — never `visits[0]`, whose position the seed data owns. */
     private JsonNode visitDescribed(JsonNode owner, String description) {
         return StreamSupport.stream(owner.path("pets").get(0).path("visits").spliterator(), false)

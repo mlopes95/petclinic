@@ -140,9 +140,6 @@ INSERT INTO visits (pet_id, visit_date, description) VALUES
   (3,  DATE '2025-06-12', 'patient arrived in sealed box; simultaneously alive and dead — diagnosis deferred until observation'),
   (3,  DATE '2025-08-21', 'wave function collapsed during auscultation; patient definitively purring');
 
--- Spread the seeded visits round-robin over the 6 vets so the UI has an attending vet to show.
-UPDATE visits SET vet_id = 1 + (id % 6);
-
 INSERT INTO users (username, password, enabled) VALUES
   ('admin', '$2a$10$ymaklWBnpBKlgdMgkjWVF.GMGyvH8aDuTK.glFOaKw712LHtRRymS', TRUE);
 

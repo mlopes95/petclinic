@@ -8,7 +8,6 @@ import {By} from '@angular/platform-browser';
 import {VisitsPageComponent} from './visits-page.component';
 import {VisitService} from '../visit.service';
 import {Visit} from '../visit';
-import {VetNamePipe} from '../vet-name.pipe';
 
 class VisitServiceStub {
   getVisits(): Observable<Visit[]> {
@@ -25,7 +24,6 @@ describe('VisitsPageComponent', () => {
     {
       id: 1, date: '2024-01-15', description: 'rabies shot', pet: null as any,
       petId: 7, petName: 'Leo', ownerId: 1, ownerFirstName: 'George', ownerLastName: 'Franklin',
-      vetId: 3, vetFirstName: 'Linda', vetLastName: 'Douglas',
     },
     {
       id: 2, date: '2025-06-04', description: 'checkup', pet: null as any,
@@ -39,7 +37,7 @@ describe('VisitsPageComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [VisitsPageComponent, VetNamePipe],
+      declarations: [VisitsPageComponent],
       schemas: [NO_ERRORS_SCHEMA],
       imports: [CommonModule, RouterTestingModule],
       providers: [{provide: VisitService, useClass: VisitServiceStub}],
@@ -84,18 +82,6 @@ describe('VisitsPageComponent', () => {
       expect(links.length).toBe(visits.length);
       expect(links[0].attributes['ng-reflect-router-link'] || links[0].nativeElement.getAttribute('href'))
         .toContain('/owners/');
-    });
-  }));
-
-  it('renders the attending vet, and a dash when none is assigned', waitForAsync(() => {
-    spyOn(visitService, 'getVisits').and.returnValue(of(visits));
-    fixture.detectChanges();
-    fixture.whenStable().then(() => {
-      fixture.detectChanges();
-      const vetCells = fixture.debugElement.queryAll(By.css('.visit-vet'))
-        .map(cell => cell.nativeElement.textContent.trim());
-      expect(vetCells).toContain('Linda Douglas');
-      expect(vetCells).toContain('—');
     });
   }));
 });
