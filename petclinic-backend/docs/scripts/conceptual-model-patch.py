@@ -79,6 +79,7 @@ NOTE_TEXT = (
     "then delete this label.")
 NOTE_STYLE = f"text;html=1;align=center;fontSize=13;fontColor={TODO_COLOR};"
 NOTE_W, NOTE_H = 260, 60
+NOTE_GAP = 40  # breathing room between the lowest box and the note
 
 BOX_W, BOX_H = 140, 50
 LANE_GAP = 300  # how far left of the map the staging lane sits
@@ -229,8 +230,8 @@ def patch(model_root, concepts, associations):
 
     # 4. say, on the map itself, what the red means and how to clear it
     if any(c.startswith(("staged", "drew")) for c in changes) and not note_drawn(cells):
-        x, y = staging_origin(model_root)
-        root.append(relayout_note(x, y - ROW_GAP))
+        x, y = note_origin(model_root)
+        root.append(relayout_note(x, y))
         changes.append("wrote      the re-layout note — delete it once the map is drawn")
 
     return changes
@@ -242,13 +243,33 @@ def note_drawn(cells):
 
 
 def relayout_note(x, y):
-    """The instruction, parked at the head of the staging lane — where the red is."""
+    """The instruction, written on the map itself so nobody has to know to look for it."""
     obj = ET.Element("object", {"label": NOTE_TEXT, "id": NOTE_ID})
     cell = ET.SubElement(obj, "mxCell", {"style": NOTE_STYLE, "vertex": "1", "parent": "1"})
     ET.SubElement(cell, "mxGeometry", {
         "x": str(x), "y": str(y),
         "width": str(NOTE_W), "height": str(NOTE_H), "as": "geometry"})
     return obj
+
+
+def note_origin(model_root):
+    """Below everything drawn, flush with the map's left edge.
+
+    The note used to sit at the head of the staging lane, 300px left of the map. With a
+    staged box that is where the red is; with only a red edge — the common case, a new
+    association between two concepts already placed — it was the leftmost thing on the
+    picture, so the export grew a blank lane and every box a reader knows by position
+    slid right. Under the map it costs a strip nobody laid out and moves nothing."""
+    xs, bottoms = [], []
+    for cell, _ in index_cells(model_root):
+        geometry = cell.find("mxGeometry")
+        if geometry is not None and geometry.get("x") and cell.get("vertex") == "1" \
+                and cell.get("connectable") != "0":
+            xs.append(float(geometry.get("x")))
+            bottoms.append(float(geometry.get("y", 0)) + float(geometry.get("height", 0)))
+    if not xs:
+        return 0, 0
+    return int(min(xs)), int(max(bottoms)) + NOTE_GAP
 
 
 def staging_origin(model_root):
