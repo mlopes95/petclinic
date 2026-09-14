@@ -7,7 +7,7 @@
     },
 
     "playwright": {
-      "//": "In case MCPs are disabled, tell agent to use playwright cli",
+      "//": "❤️In case MCPs are disabled, tell agent to use playwright cli",
       "command": "npx",
       "args": [
         "@playwright/mcp@latest",
@@ -18,6 +18,8 @@
 
     "postgres-db": {
       "//": "In case MCPs are disabled, tell agent to use .claude/skills/petclinic-db-cli/db-cli.sh (same server, over the CLI)",
+      "//npm_config_cache": "IntelliJ's bundled node exports a corrupt _npx cache; without this the server dies as CONNECTION_CLOSED / 'initialization timed out'",
+      "env": { "npm_config_cache": "${HOME}/.npm" },
       "command": "npx",
       "args": [
         "-y",
@@ -25,16 +27,6 @@
         "--transport", "stdio",
         "--dsn", "postgres://petclinic:petclinic@localhost:5432/petclinic"
       ]
-    },
-
-    "grafana": {
-      "command": "uvx",
-      "args": ["mcp-grafana"],
-      "env": {
-        "GRAFANA_URL": "http://localhost:3300",
-        "GRAFANA_USERNAME": "admin",
-        "GRAFANA_PASSWORD": "admin"
-      }
     },
 
     "petclinic-mcp": {

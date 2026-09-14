@@ -3,16 +3,24 @@
 # aborts the commit; demanded instead is a placeholder resolved at runtime, e.g.
 #     spring.ai.openai.api-key=${OPENAI_API_KEY}
 #
-# Extend gitleaks' default rules, but allowlist the single PUBLIC demo MCP JWT used across
-# the PetClinic workshop. It encodes {"sub":"1","name":"George Franklin",...}, authenticates
-# only against the localhost MCP server, and is already committed elsewhere in the repo
-# (petclinic-claude-chatbot/.mcp.json, McpHttpSecurityTest). It is NOT a real credential.
-# The allowlist is scoped to exactly this token's payload — any other JWT is still caught.
+# Extend gitleaks' default rules, but allowlist the PUBLIC demo MCP credentials used across
+# the PetClinic workshop: two hand-made JWTs (sub=1 "George Franklin" / "Kevin McCallister")
+# and the MCP API key. They authenticate only against the localhost MCP server and are
+# already committed throughout the repo (.mcp.json, application.properties, the chatbot's
+# index.html). They are NOT real credentials.
+# Each allowlist is scoped to the exact literal — any other JWT or API key is still caught.
 [extend]
 useDefault = true
 
 [[allowlists]]
-description = "Public demo MCP JWT (George Franklin, sub=1, localhost only)"
+description = "Public demo MCP JWTs (sub=1 George Franklin / Kevin McCallister, localhost only)"
 regexes = [
   '''eyJzdWIiOiIxIiwibmFtZSI6Ikdlb3JnZSBGcmFua2xpbi[A-Za-z0-9_-]*''',
+  '''eyJzdWIiOiIxIiwibmFtZSI6IktldmluIE1jQ2FsbGlzdGVy[A-Za-z0-9_.-]*''',
+]
+
+[[allowlists]]
+description = "Public demo MCP API key (localhost only)"
+regexes = [
+  '''pc-mcp-7f3a9c2e1b8d4056''',
 ]

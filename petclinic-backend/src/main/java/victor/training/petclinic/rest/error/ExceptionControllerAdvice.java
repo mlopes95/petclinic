@@ -17,6 +17,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import victor.training.petclinic.domain.InvalidVisitDateException;
+
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
@@ -53,6 +55,15 @@ public class ExceptionControllerAdvice {
         ProblemDetail pd = buildProblemDetail("Validation Error",
                 "Validation failed for request. See 'errors' for details.", HttpStatus.BAD_REQUEST, request);
         pd.setProperty("errors", errors);
+        return ResponseEntity.badRequest().body(pd);
+    }
+
+    @ExceptionHandler(InvalidVisitDateException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ProblemDetail> handleInvalidVisitDateException(InvalidVisitDateException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid visit date: {}", ex.getMessage());
+        ProblemDetail pd = buildProblemDetail("Invalid Visit Date", ex.getMessage(), HttpStatus.BAD_REQUEST, request);
         return ResponseEntity.badRequest().body(pd);
     }
 

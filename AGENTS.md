@@ -4,6 +4,9 @@ It's the most important file on this Git repo.
 Add to rules here to prevent AI fail/slop.
 Review carefully its contents at every retrospective to remove: obvious, duplication, conflicts, drift, CYA comments.
 
+- For Architecture, see `ARCHITECTURE.md` 
+- For Guardrails, see `GUARDRAILS.md`
+
 ## AGENTS.md is the single source of truth
 Claude Code: never write rules into `CLAUDE.md` - that file only contains @AGENTS.md to include this file.
 GitHub Copilot: use this file over your proprietary `.github/copilot-instructions.md`.
@@ -12,9 +15,17 @@ Warning: git-pushed symlinks don't work reliably when clonsed on Windows machine
 ## Project Overview
 Full-stack PetClinic application, managing veterinary clinic operations (owners, pets, vets, visits, specialties)
 
-**Structure:**
-- `petclinic-backend/` - Spring Boot 3.5 REST API (Java 21), Maven-built
+**Structure:** independent Maven/npm builds — there is no aggregator `pom.xml` at the root.
+- `petclinic-backend/` - Spring Boot 3.5 REST API (Java 21), Maven-built. Has its own `AGENTS.md`
 - `petclinic-frontend/` - Angular 16 SPA (Angular Material + Bootstrap 3), npm built
+- `petclinic-chatbot/` - separate Spring AI app on :8082 (teaching module): RAG over vet specialties, books visits through the backend's MCP. OpenAI-only, needs `OPENAI_API_KEY`; pgvector via its own `docker-compose.yml`
+- `petclinic-database/` - tiny Maven launcher that runs embedded PostgreSQL on :5432 for dev (`ro.victorrentea`); the tests start their own in-process
+- `petclinic-test/` - Playwright + Cucumber end-to-end suite (npm), plus the `.feature` specs and the genseq sequence-diagram generator. Has its own `AGENTS.md`
+- `petclinic-observability/` - `grafana/otel-lgtm` container: Grafana on :3300, OTLP on :4317/:4318
+- `refactoring-legacy/` - self-contained OpenRewrite recipe module, run from the CLI against the backend; wired into no other build
+- `docker/` - the whole stack in containers, one isolated instance per branch under review (`start-docker.sh`), with an idle reaper
+- `scripts/` - repo guardrails and helpers used by the hooks and the start scripts (preflight, AGENTS.md check, human-review resolution)
+- `user-manual/` - generated end-user manual (`manual.md` + screenshots)
 
 ## Common Commands
 
@@ -25,6 +36,9 @@ Each script is foreground; run them in separate terminals.
 ./start-backend.sh         # Spring Boot on localhost:8080 (also hosts Spring AI MCP at /mcp)
 ./start-frontend.sh        # Angular dev server on localhost:4200
 ./start-grafana.sh         # Starts grafana on localhost:3300 in a docker container
+./start-chatbot.sh         # Spring AI chatbot on localhost:8082 (needs OPENAI_API_KEY)
+./start-tests.sh           # the petclinic-test Playwright suite
+./start-docker.sh          # the whole stack in containers, isolated per branch
 ```
 Each app prints `✅ started <name> on port <n>` once it is actually ready, and `❌ …` when
 it is not coming — wait for whichever line appears, never for a fixed timeout. A port
@@ -32,42 +46,7 @@ already held by an orphan from a previous run is reported in under a second, bef
 anything is built or wiped; the scripts never kill the squatter, they print its PID and
 stop, so freeing it is your call.
 
-### Backend (petclinic-backend/)
-```sh
-mvn spring-boot:run              # Run backend
-mvn test                         # Run tests
-mvn clean install                # Build
-mvn test -Dtest=ClassName#methodName # Run a single test
-```
-
-### Frontend (petclinic-frontend/)
-```sh
-npm start                           # Dev server on localhost:4200
-npm run build                       # Production build
-npm test                            # Karma tests
-npm run test-headless               # Headless Chrome tests
-npm run e2e                         # Protractor e2e tests
-```
-
 ## Architecture
-
-### Backend Architecture
-
-**Layered Structure:**
-1. REST Controllers (`petclinic-backend/src/main/java/.../rest/`) - expose API endpoints
-2. Mappers (`mapper/`) - hand-written `@Component` entity↔DTO conversion
-3. Repository Layer (`repository/`) - Spring Data JPA interfaces (no service layer!)
-4. Domain Model (`domain/`) - JPA entities (Owner, Pet, Vet, Visit, Specialty, PetType, User, Role)
-
-**Data Flow:**
-Request → REST Controller → Repository / Mapper → JPA Entity
-Response ← REST Controller ← Mapper (Entity→DTO) ← Repository
-
-**Key Patterns:**
-- DTOs are hand-written in `src/main/java/.../rest/dto/` (not generated)
-- `openapi.yaml` at project root is generated output (from `OpenApiExtractorTest`), not a source spec;
-  editing it by hand is denied in `.claude/settings.json` — regenerate it instead
-- Constructor injection, global exception handling via `@RestControllerAdvice`
 
 ## Additional Knowledge
 Load one of these when the task calls for it — they are the sole source of truth on their subject.
@@ -157,6 +136,15 @@ refused outright), and never calls `Visit.validateDate`. Reconciling them is ope
   `V1`, sample data in `V3__sample_data.sql`). An empty DB before that is normal, not broken.
 - ⚠️ `./start-database.sh` starts by `rm -rf data`, wiping any rows added at runtime. Use it only
   for a deliberate reset; to keep runtime data, start Postgres from the jar directly.
+- **Never design against the seed data alone — ask to look at the real rows.** Whenever a
+  decision depends on what the data actually looks like (sortable columns, nullability,
+  formats, cardinality), ask Victor for permission to run a query, then run it. He has
+  context about the data that is nowhere in this repo. The way in is the `petclinic-db-cli`
+  skill (`dbhub` MCP over `mcptools`) — and note the database is **PostgreSQL**, never MySQL.
+- **Target scale: ~100.000 owners within a year** (Bizu, Sep 2026). The 28 seeded rows are a
+  demo fixture, not the sizing. Anything that lists or searches owners must page and sort in
+  the database — never load the table into the browser or the JVM — and every sortable or
+  filterable column needs an index.
 
 ### Security
 - Disabled by default
@@ -166,14 +154,7 @@ refused outright), and never calls `Visit.validateDate`. Reconciling them is ope
 
 ## API Endpoints
 Backend exposes REST API at http://localhost:8080/api/
-REST Contract: 
-- Owners: `/api/owners`, `/api/owners/{id}`
-- Pets: `/api/pets`, `/api/pets/{id}`
-- Vets: `/api/vets`, `/api/vets/{id}`
-- Visits: `/api/visits`
-- PetTypes: `/api/pettypes`
-- Specialties: `/api/specialties`
-- Users: `/api/users`
+REST Contract at `openapi.yaml` which is kept in sync with reality via tests 
 
 ## Domain Model
 Core entities and relationships:
@@ -182,19 +163,11 @@ Core entities and relationships:
 - **Vet** N→N **Specialty** (via `vet_specialties` join table)
 - **User** 1→N **Role**
 
-## Java Code Style
-- Keep methods under 30 lines
-- Use constructor injection in src/main, `@Autowired` only in tests
-- Use `@Transactional` only when strictly necessary: 2+ DB updates
-- Global REST exception handling is done via `@RestControllerAdvice`
-- Apply `@Validated` on every `@RequestBody`
-- Write only the `equals`/`hashCode`/`toString` a class actually needs, not all three reflexively
-
 ## Core Values
 - Write non-trivial code using TDD
 - Keep comments concise, prefer explanatory variable/method names
-- Don't leave behind comments when deleting or moving stuff, to prevent later 'heresy resurrection'
+- Don't leave behind comments when deleting or moving stuff (CYA comments)
 - Always run tests after any complex refactoring
-- Be brief
+- Be brief 
 - Challenge ambiguous prompts - I love hearing I'm wrong! I want a thinking partener, not a sycophantic yes-man.
 - Before any git commit, make sure to update any drifted knowledge in AGENTS.md

@@ -26,6 +26,7 @@ export class PlaywrightWorld extends World {
   ownerId?: number;
   petId?: number;
   visitDescription?: string;
+  petBirthDate?: string;
   vetName?: string;
   // Set by the owner-search scenarios: every owner the API knows, by full name.
   allOwnerNames?: string[];

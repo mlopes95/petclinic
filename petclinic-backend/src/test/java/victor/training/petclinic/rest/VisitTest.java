@@ -213,6 +213,82 @@ public class VisitTest {
     }
 
     @Test
+    void create_dateBeforePetBirthDate_rejected() throws Exception {
+        VisitDto newVisit = new VisitDto();
+        newVisit.setPetId(petId);
+        newVisit.setDate(PetTest.BIRTH_DATE.minusDays(1));
+        newVisit.setDescription("too early");
+
+        mockMvc.perform(post("/api/visits")
+                .content(mapper.writeValueAsString(newVisit))
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_dateOnPetBirthDate_accepted() throws Exception {
+        VisitDto newVisit = new VisitDto();
+        newVisit.setPetId(petId);
+        newVisit.setDate(PetTest.BIRTH_DATE);
+        newVisit.setDescription("first checkup");
+
+        mockMvc.perform(post("/api/visits")
+                .content(mapper.writeValueAsString(newVisit))
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void create_dateMoreThanOneYearAhead_rejected() throws Exception {
+        VisitDto newVisit = new VisitDto();
+        newVisit.setPetId(petId);
+        newVisit.setDate(LocalDate.now().plusYears(1).plusDays(1));
+        newVisit.setDescription("too far ahead");
+
+        mockMvc.perform(post("/api/visits")
+                .content(mapper.writeValueAsString(newVisit))
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_dateExactlyOneYearAhead_accepted() throws Exception {
+        VisitDto newVisit = new VisitDto();
+        newVisit.setPetId(petId);
+        newVisit.setDate(LocalDate.now().plusYears(1));
+        newVisit.setDescription("checkup next year");
+
+        mockMvc.perform(post("/api/visits")
+                .content(mapper.writeValueAsString(newVisit))
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void update_dateBeforePetBirthDate_rejected() throws Exception {
+        VisitFieldsDto update = new VisitFieldsDto();
+        update.setDate(PetTest.BIRTH_DATE.minusDays(1));
+        update.setDescription("too early");
+
+        mockMvc.perform(put("/api/visits/" + visitId)
+                .content(mapper.writeValueAsString(update))
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void update_dateMoreThanOneYearAhead_rejected() throws Exception {
+        VisitFieldsDto update = new VisitFieldsDto();
+        update.setDate(LocalDate.now().plusYears(1).plusDays(1));
+        update.setDescription("too far ahead");
+
+        mockMvc.perform(put("/api/visits/" + visitId)
+                .content(mapper.writeValueAsString(update))
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void findVisitsByPetId() {
         // Add a second visit for the same pet
         Visit visit2 = new Visit();

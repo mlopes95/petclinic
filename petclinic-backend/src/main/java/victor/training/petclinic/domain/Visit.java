@@ -43,6 +43,15 @@ public class Visit {
         this.date = date;
     }
 
+    /** Enforces bug #40's rule: a visit is dated between the pet's birth and one year from today, both edges inclusive. */
+    public void validateDate(LocalDate petBirthDate) {
+        LocalDate maxDate = LocalDate.now().plusYears(1);
+        if (date.isAfter(maxDate) || (petBirthDate != null && date.isBefore(petBirthDate))) {
+            throw new InvalidVisitDateException("Visit date " + date + " must be between the pet's birth date ("
+                    + petBirthDate + ") and one year from today (" + maxDate + ")");
+        }
+    }
+
     public LocalTime getTime() {
         return time;
     }

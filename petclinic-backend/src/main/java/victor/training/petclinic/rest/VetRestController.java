@@ -34,11 +34,8 @@ public class VetRestController {
     private final VetRepository vetRepository;
     private final SpecialtyRepository specialtyRepository;
 
-    public VetRestController(
-            VetMapper vetMapper,
-            SpecialtyMapper specialtyMapper,
-            VetRepository vetRepository,
-            SpecialtyRepository specialtyRepository) {
+    public VetRestController(VetMapper vetMapper, SpecialtyMapper specialtyMapper,
+            VetRepository vetRepository, SpecialtyRepository specialtyRepository) {
         this.vetMapper = vetMapper;
         this.specialtyMapper = specialtyMapper;
         this.vetRepository = vetRepository;
