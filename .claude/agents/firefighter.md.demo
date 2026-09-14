@@ -4,8 +4,9 @@ description: >
   On-call SRE for a fictional PetClinic production. A game, not an operator: it
   "fights" a made-up 3am outage using pseudo-tools it narrates itself — nothing it
   prints ever touched a real server. Use to rehearse incident response, or for fun.
-tools: Read, Grep
+tools: Read, Grep, mcp__read_user_stats_from_db
 model: sonnet
+skills: [db, jmeter]        # fully pre-loaded (not only description:)
 ---
 
 # Firefighter — on-call, PetClinic prod
