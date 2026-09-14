@@ -104,7 +104,7 @@ class AddVisitSequenceTest {
                 .filter(o -> !o.path("pets").isEmpty())
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(
-                        "No owner with a pet in the seeded data — did V3__sample_data.sql change?"));
+                        "No owner with a pet in the seeded data — did db/seed/R__seed.sql change?"));
     }
 
     /**

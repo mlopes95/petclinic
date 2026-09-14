@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Deployment diagram guardrail — the hand-drawn picture against what actually ran.
  *
- * <p>{@code docs/deployment.drawio.png} is a real draw.io file — see {@link DrawioDiagram}
+ * <p>{@code docs/Deployment.drawio.png} is a real draw.io file — see {@link DrawioDiagram}
  * for how the picture carries its own mxGraph XML. That is only worth something if the
  * picture is machine-checkable, which is why every box and every arrow carries metadata:
  *
@@ -51,7 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DeploymentDiagramTest {
 
-    private static final Path DIAGRAM = Paths.get("docs/deployment.drawio.png");
+    private static final Path DIAGRAM = Paths.get("docs/Deployment.drawio.png");
     private static final Path TRACE_DIAGRAMS = Paths.get("../petclinic-test/src");
 
     /** A call from one deployed container to another, named as the traces name them. */

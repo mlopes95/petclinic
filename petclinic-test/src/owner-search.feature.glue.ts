@@ -27,7 +27,7 @@ async function expectOwnersListed(world: PlaywrightWorld, expected: string[]): P
 /**
  * Remembers every owner the clinic holds, after checking that the ones the
  * Background names are among them — so a changed seed (Flyway's
- * V3__sample_data.sql) fails on the Given instead of looking like a broken search.
+ * db/seed/R__seed.sql) fails on the Given instead of looking like a broken search.
  */
 Given('the clinic has these owners', async function (this: PlaywrightWorld, owners: DataTable) {
   const {data} = await axios.get(`${API_BASE}/owners`, {timeout: 10_000});

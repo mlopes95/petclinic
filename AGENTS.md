@@ -132,8 +132,14 @@ which is a different and much cheaper thing: proxy URLs, no runner render, no pu
 ### Database
 - **Dev:** Embedded PostgreSQL via `./start-database.sh` (Java jar, localhost:5432)
 - **Tests:** Embedded PostgreSQL (auto-started in-process, no setup needed)
-- **Flyway seeds the DB when the backend boots** (`ddl-auto=none`; `db/migration/`: schema in
-  `V1`, sample data in `V3__sample_data.sql`). An empty DB before that is normal, not broken.
+- **Flyway boots from two locations** (`ddl-auto=none`); an empty DB before that is normal.
+  `db/migration/` is the versioned **schema** chain — no rows here, ever: seed data in a frozen
+  migration is what forced the old V5/V7/V8 to patch each other. `db/seed/R__seed.sql` is the
+  **dataset**, repeatable, so edit it freely; it re-runs on checksum change after all versioned
+  migrations, opening with `TRUNCATE ... RESTART IDENTITY` (ids are deterministic — tests rely on
+  owner 1 = Kevin McCallister, pet 3 = Milton). A second dataset = a sibling location reusing the
+  name `R__seed.sql`, picked by swapping `spring.flyway.locations`; Flyway refuses to boot on two
+  resolved migrations sharing one description, so two can never both apply.
 - ⚠️ `./start-database.sh` starts by `rm -rf data`, wiping any rows added at runtime. Use it only
   for a deliberate reset; to keep runtime data, start Postgres from the jar directly.
 

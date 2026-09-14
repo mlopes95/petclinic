@@ -62,7 +62,7 @@ Given('a pet registered with the clinic', async function (this: PlaywrightWorld)
 
 /**
  * Named in the Background rather than picked at random, because the Then names her too.
- * Checking her here means a changed seed (Flyway's V3__sample_data.sql) fails on the Given
+ * Checking her here means a changed seed (Flyway's db/seed/R__seed.sql) fails on the Given
  * instead of looking like a booking that lost its vet.
  */
 Given("{string} is one of the clinic's vets", async function (this: PlaywrightWorld, vetName: string) {

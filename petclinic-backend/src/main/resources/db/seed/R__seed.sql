@@ -1,3 +1,18 @@
+-- Demo / test dataset. NOT part of the incremental chain in db/migration.
+--
+-- Repeatable (R__), so Flyway re-applies it whenever its checksum changes and runs it after
+-- every versioned migration — i.e. always against the final schema. That is what frees this
+-- file from the "never edit an applied migration" rule the old V3__sample_data.sql lived under.
+--
+-- To offer a second dataset later, give it the SAME description in a sibling location
+-- (db/seed/minimal/R__seed.sql) and switch spring.flyway.locations between them. Flyway refuses
+-- to start with two resolved migrations of one description, so the two can never both apply.
+
+-- Idempotent, and resets the identity sequences so the ids below stay deterministic
+-- (owner 1 = Kevin McCallister, pet 3 = Milton) — several tests and e2e specs rely on them.
+TRUNCATE roles, users, visits, pets, owners, vet_specialties, specialties, vets, types
+    RESTART IDENTITY CASCADE;
+
 INSERT INTO vets (first_name, last_name) VALUES
   ('James',  'Carter'),
   ('Helen',  'Leary'),
@@ -6,7 +21,14 @@ INSERT INTO vets (first_name, last_name) VALUES
   ('Henry',  'Stevens'),
   ('Sharon', 'Jenkins');
 
-INSERT INTO specialties (name) VALUES ('radiology'), ('surgery'), ('dentistry');
+-- description = the symptoms that identify the specialty; vectorized into the chatbot's RAG.
+INSERT INTO specialties (name, description) VALUES
+  ('radiology',
+    'limping, limp, broken bone, fracture, suspected fracture, swollen leg, can''t bear weight, holding up a paw, joint pain after a fall, suspected internal injury, ingested a foreign object.'),
+  ('surgery',
+    'skin rash, itching, lump, growth, mass, wound, open wound, cut, laceration, abscess, swelling under the skin, bite wound, non-healing sore.'),
+  ('dentistry',
+    'bad breath, tooth pain, bleeding gums, difficulty eating, dropping food, drooling, broken tooth, loose tooth, pawing at the mouth, reluctance to chew.');
 
 -- Pairs preserved from upstream petclinic data; column order matches
 -- the original ON CONFLICT (specialty_id, vet_id) hint.
@@ -17,8 +39,10 @@ INSERT INTO types (name) VALUES
   ('cat'), ('dog'), ('lizard'), ('snake'), ('bird'), ('hamster'), ('horse');
 
 -- Owners and pets drawn from European literature, film, and science.
+-- Kevin McCallister (owner 1 = sub 1 in the demo JWT) deliberately has NO phone: the chatbot's
+-- create_visit tool then ELICITS one on the first booking and only CONFIRMS it on later ones.
 INSERT INTO owners (first_name, last_name, address, city, telephone) VALUES
-  ('Kevin',     'McCallister',  '671 Lincoln Boulevard',     'Winnetka',         '0017085550199'),
+  ('Kevin',     'McCallister',  '671 Lincoln Boulevard',     'Winnetka',         NULL),
   ('Harry',     'Potter',       '4 Privet Drive',            'Little Whinging',  '0119084455'),
   ('Erwin',     'Schroedinger', 'Boltzmanngasse 5',          'Vienna',           '0131914920'),
   ('Salazar',   'Śliwiński',    'Hogwarts Dungeons',         'Hogsmeade',        '0441463555113'),
@@ -115,6 +139,9 @@ INSERT INTO visits (pet_id, visit_date, description) VALUES
   (3,  DATE '2026-05-03', 'annual general checkup'),  -- Milton (Schroedinger's cat)
   (3,  DATE '2025-06-12', 'patient arrived in sealed box; simultaneously alive and dead — diagnosis deferred until observation'),
   (3,  DATE '2025-08-21', 'wave function collapsed during auscultation; patient definitively purring');
+
+-- Spread the seeded visits round-robin over the 6 vets so the UI has an attending vet to show.
+UPDATE visits SET vet_id = 1 + (id % 6);
 
 INSERT INTO users (username, password, enabled) VALUES
   ('admin', '$2a$10$ymaklWBnpBKlgdMgkjWVF.GMGyvH8aDuTK.glFOaKw712LHtRRymS', TRUE);

@@ -9,7 +9,7 @@ unchecked — the mxGraph XML rides inside the picture, and a guardrail test rea
 and compares it against the code.
 
 #### Deployment (FE → BE → DB)
-![Deployment](petclinic-backend/docs/deployment.drawio.png)
+![Deployment](petclinic-backend/docs/Deployment.drawio.png)
 
 > Hand-drawn, and it has to be: the backend cannot
 > introspect the Angular SPA or PostgreSQL. It stays honest anyway — it is a `.drawio.png`,
