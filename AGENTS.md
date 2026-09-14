@@ -7,7 +7,7 @@ Review carefully its contents at every retrospective to remove: obvious, duplica
 ## AGENTS.md is the single source of truth
 Claude Code: never write rules into `CLAUDE.md` - that file only contains @AGENTS.md to include this file.
 GitHub Copilot: use this file over your proprietary `.github/copilot-instructions.md`.
-Warning: git-pushed symlinks don't work reliably when clonsed on Windows machines.
+Warning: git-pushed symlinks don't work reliably when cloned on Windows not having WSL.
 
 ## Project Overview
 Full-stack PetClinic application, managing veterinary clinic operations (owners, pets, vets, visits, specialties)
@@ -26,11 +26,9 @@ Each script is foreground; run them in separate terminals.
 ./start-frontend.sh        # Angular dev server on localhost:4200
 ./start-grafana.sh         # Starts grafana on localhost:3300 in a docker container
 ```
-Each app prints `✅ started <name> on port <n>` once it is actually ready, and `❌ …` when
-it is not coming — wait for whichever line appears, never for a fixed timeout. A port
-already held by an orphan from a previous run is reported in under a second, before
-anything is built or wiped; the scripts never kill the squatter, they print its PID and
-stop, so freeing it is your call.
+Wait for `✅ started <name> on port <n>` or `❌ …`, never for a fixed timeout. A port held
+by an orphan is reported in under a second, before anything is built or wiped — the script
+prints the squatter's PID and stops; killing it is your call.
 
 ### Backend (petclinic-backend/)
 ```sh
@@ -70,7 +68,6 @@ Response ← REST Controller ← Mapper (Entity→DTO) ← Repository
 - Constructor injection, global exception handling via `@RestControllerAdvice`
 
 ## Additional Knowledge
-Load one of these when the task calls for it — they are the sole source of truth on their subject.
 
 When a guardrail test fails, or a living diagram no longer matches the code, the drift
 checks and what each of them asserts are described in [GUARDRAILS.md](GUARDRAILS.md).
@@ -132,24 +129,6 @@ there is no online version and no PR automation for it. Run `/human-review` when
 one. `diagram-preview.yml` still posts a PR comment rendering the branch's own diagrams,
 which is a different and much cheaper thing: proxy URLs, no runner render, no publishing.
 
-### The visit-date rule is specified in Gherkin, and the ticket mirrors it
-
-`petclinic-test/src/visit-date-range.feature` states bug #40's rule — a visit date sits
-between the pet's birth date and one year from today, **both edges inclusive** — as four
-Examples rows: each edge, and its nearest neighbour outside the range. That is the minimum
-that pins inclusivity; drop either "accepted" row and an off-by-one implementation still
-passes. It has **no step definitions on purpose**: it is the contract, not a test.
-
-GitHub renders a code snippet box only for a permalink pinned to a commit SHA, so a link to
-`main` would stay a bare link and a permalink would freeze. `.github/workflows/sync-issue-spec.yml`
-therefore rewrites issue #40's body between `<!-- spec:begin -->` / `<!-- spec:end -->` on every
-push that touches the file. **Edit the `.feature`, never the ticket** — the next push overwrites
-whatever was typed there.
-
-⚠️ The rule the feature states is the REST/UI one. The MCP `create_visit` tool enforces
-something else entirely (`PetClinicMcp.requireFutureDate`: no upper bound at all, and the past
-refused outright), and never calls `Visit.validateDate`. Reconciling them is open work.
-
 ### Database
 - **Dev:** Embedded PostgreSQL via `./start-database.sh` (Java jar, localhost:5432)
 - **Tests:** Embedded PostgreSQL (auto-started in-process, no setup needed)
@@ -157,12 +136,6 @@ refused outright), and never calls `Visit.validateDate`. Reconciling them is ope
   `V1`, sample data in `V3__sample_data.sql`). An empty DB before that is normal, not broken.
 - ⚠️ `./start-database.sh` starts by `rm -rf data`, wiping any rows added at runtime. Use it only
   for a deliberate reset; to keep runtime data, start Postgres from the jar directly.
-
-### Security
-- Disabled by default
-- Enable via `petclinic.security.enable=true`
-- Roles: `OWNER_ADMIN`, `VET_ADMIN`, `ADMIN`
-- Default test user: `admin`/`admin`
 
 ## API Endpoints
 Backend exposes REST API at http://localhost:8080/api/
@@ -194,8 +167,8 @@ Core entities and relationships:
 ## Core Values
 - Write non-trivial code using TDD
 - Keep comments concise, prefer explanatory variable/method names
-- Don't leave behind comments when deleting or moving stuff, to prevent later 'heresy resurrection'
+- Don't leave behind CYA comments when deleting or moving stuff
 - Always run tests after any complex refactoring
 - Be brief
-- Challenge ambiguous prompts - I love hearing I'm wrong! I want a thinking partener, not a sycophantic yes-man.
+- Challenge my prompts - I love hearing I'm wrong! Be a thinking partener, not a sycophantic yes-man.
 - Before any git commit, make sure to update any drifted knowledge in AGENTS.md

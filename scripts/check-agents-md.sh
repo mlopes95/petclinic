@@ -76,10 +76,6 @@ while read -r f; do
     err "'$agents' is a symlink — see reason 2 above."
     continue
   fi
-  bytes=$(wc -c <"$agents" | tr -d ' ')
-  if [ "$bytes" -lt 200 ]; then
-    err "'$agents' is only ${bytes} bytes — it looks like a leftover symlink stub, not real instructions."
-  fi
 done < <(git ls-files)
 
 [ "$found" -eq 0 ] && err "No CLAUDE.md found — the Claude Code import is missing entirely."

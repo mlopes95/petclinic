@@ -1,14 +1,12 @@
 ---
-name: regen-user-manual
-description: Regenerate user-manual/manual.md from scratch by crawling the running PetClinic UI in a browser and writing each feature section from the bundled template. Explicit invocation only — user must type /regen-user-manual.
-disable-model-invocation: true
+description: Regenerate user-manual/manual.md from scratch by crawling the running PetClinic UI in a browser
 ---
 
 # Regenerate the user manual
 
 You are regenerating the end-user manual for the PetClinic application from scratch. Output: `user-manual/manual.md` plus screenshots under `user-manual/screenshots/`.
 
-This is a full rewrite. Do **not** read the previous `manual.md` and do **not** diff against it — the bundled template is the single source of truth for structure, so just produce the new manual. The only thing you reuse from the existing folder is the `screenshots/` directory, which you overwrite as you recapture.
+This is a full rewrite. Do **not** read the previous `manual.md` and do **not** diff against it — the template is the single source of truth for structure, so just produce the new manual. The only thing you reuse from the existing folder is the `screenshots/` directory, which you overwrite as you recapture.
 
 ## Pre-flight (abort if either fails)
 
@@ -25,7 +23,7 @@ If either returns anything other than `200`, abort with this message and STOP:
 
 ## Step 1 — Load the template
 
-Read the bundled template `.claude/skills/regen-user-manual/manual-template.md`. It defines the exact shape of the output: the title block, the intro, the "do not edit by hand" note, the Contents list, and the per-feature section pattern (overview paragraph + `### <action>` subsections, each with one screenshot and step-by-step prose). Every section you write must follow that pattern.
+Read the template `.claude/templates/manual-template.md`. It defines the exact shape of the output: the title block, the intro, the "do not edit by hand" note, the Contents list, and the per-feature section pattern (overview paragraph + `### <action>` subsections, each with one screenshot and step-by-step prose). Every section you write must follow that pattern.
 
 ## Step 2 — Discover the live route inventory
 
@@ -55,7 +53,7 @@ If you create new owners/pets/visits while crawling for screenshots, that test d
 
 ## Step 4 — Write `manual.md`
 
-Write `user-manual/manual.md` from scratch, following the bundled template exactly.
+Write `user-manual/manual.md` from scratch, following the template exactly.
 
 Top of `manual.md` must contain:
 
