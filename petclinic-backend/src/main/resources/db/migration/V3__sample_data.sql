@@ -21,7 +21,7 @@ INSERT INTO owners (first_name, last_name, address, city, telephone) VALUES
   ('Kevin',     'McCallister',  '671 Lincoln Boulevard',     'Winnetka',         '0017085550199'),
   ('Harry',     'Potter',       '4 Privet Drive',            'Little Whinging',  '0119084455'),
   ('Erwin',     'Schroedinger', 'Boltzmanngasse 5',          'Vienna',           '0131914920'),
-  ('Tom',       'Riddle',       'Malfoy Manor',              'Wiltshire',        '0119844321'),
+  ('Salazar',   'Śliwiński',    'Hogwarts Dungeons',         'Hogsmeade',        '0441463555113'),
   ('Ronald',    'Weasley',      'The Burrow',                'Ottery St Catchpole','0119544321'),
   ('Roger',     'Radcliff',     '27 Outer Circle',           'London',           '0442074860707'),
   ('Newt',      'Scamander',    'Diagon Alley',              'London',           '0442079460001'),
@@ -32,11 +32,28 @@ INSERT INTO owners (first_name, last_name, address, city, telephone) VALUES
   ('James',     'Bond',         '30 Wellington Square',      'London',           '0442073527070'),
   ('Hercule',   'Poirot',       'Whitehaven Mansions',       'London',           '0442079241221');
 
+INSERT INTO owners (first_name, last_name, address, city, telephone) VALUES
+  ('Sam',       'Carraclough',  'Greenall Bridge',           'Yorkshire',        '0441943876543'),
+  ('Beatrix',   'Potter',       'Hill Top Farm',             'Near Sawrey',      '0441539436269'),
+  ('Long',      'Silver',       'Admiral Benbow Inn',        'Bristol',          '0441179293000'),
+  ('Argus',     'Filch',        'Hogwarts Castle',           'Inverness',        '0441463245678'),
+  ('Wallace',   'Wensleydale',  '62 West Wallaby Street',    'Wigan',            '0441942244466'),
+  ('Wendy',     'Darling',      '14 Kensington Gardens',     'London',           '0442079372122'),
+  ('Rubeus',   'Hagrid',        'Gamekeepers Hut',           'Hogsmeade',        '0441463555111'),
+  ('Hermione', 'Granger',       'Gryffindor Tower',          'Hogsmeade',        '0441463555112'),
+  ('Tom',      'Riddle',        'Malfoy Manor',              'Wiltshire',        '0119844321'),
+  ('Tintin',   'Reporter',      '26 Rue du Labrador',        'Brussels',         '0032225112233'),
+  ('Lady',     'Tremaine',      'Chateau Tremaine',          'Ile-de-France',    '0146203030'),
+  ('Mister',   'Geppetto',      'Via dei Tessitori 7',       'Florence',         '0039055290383'),
+  ('Alonso',   'Quixano',       'Campo de Montiel',          'La Mancha',        '0034926215566'),
+  ('Charles',  'Dickens',       'Gad''s Hill Place',         'Higham',           '0441634406030'),
+  ('Sherlock', 'Holmes',        '221B Baker Street',         'London',           '0442079351269');
+
 INSERT INTO pets (name, birth_date, type_id, owner_id) VALUES
   ('Axel',            DATE '2018-12-24', 6, 1),  -- Buzz McCallister's tarantula (hamster stand-in)
   ('Hedwig',          DATE '2018-08-06', 5, 2),  -- Harry's snowy owl
   ('Milton',          DATE '2020-09-07', 1, 3),  -- Schroedinger's cat
-  ('Nagini',          DATE '2017-01-20', 4, 4),  -- Voldemort's snake
+  ('Nagini',          DATE '2017-01-20', 4, 22), -- Voldemort's snake
   ('Scabbers',        DATE '2019-08-06', 6, 5),  -- Ron Weasley's rat
   ('Pongo',           DATE '2018-04-17', 2, 6),  -- 101 Dalmatians
   ('Perdita',         DATE '2018-03-07', 2, 6),
@@ -54,23 +71,6 @@ INSERT INTO visits (pet_id, visit_date, description) VALUES
   (10, DATE '2023-06-04', 'neutered'),
   (9,  DATE '2022-09-04', 'spayed');
 
-INSERT INTO owners (first_name, last_name, address, city, telephone) VALUES
-  ('Sam',       'Carraclough',  'Greenall Bridge',           'Yorkshire',        '0441943876543'),
-  ('Beatrix',   'Potter',       'Hill Top Farm',             'Near Sawrey',      '0441539436269'),
-  ('Long',      'Silver',       'Admiral Benbow Inn',        'Bristol',          '0441179293000'),
-  ('Argus',     'Filch',        'Hogwarts Castle',           'Inverness',        '0441463245678'),
-  ('Wallace',   'Wensleydale',  '62 West Wallaby Street',    'Wigan',            '0441942244466'),
-  ('Wendy',     'Darling',      '14 Kensington Gardens',     'London',           '0442079372122'),
-  ('Rubeus',   'Hagrid',        'Gamekeepers Hut',           'Hogsmeade',        '0441463555111'),
-  ('Hermione', 'Granger',       'Gryffindor Tower',          'Hogsmeade',        '0441463555112'),
-  ('Salazar',  'Śliwiński',     'Hogwarts Dungeons',         'Hogsmeade',        '0441463555113'),
-  ('Tintin',   'Reporter',      '26 Rue du Labrador',        'Brussels',         '0032225112233'),
-  ('Lady',     'Tremaine',      'Chateau Tremaine',          'Ile-de-France',    '0146203030'),
-  ('Mister',   'Geppetto',      'Via dei Tessitori 7',       'Florence',         '0039055290383'),
-  ('Alonso',   'Quixano',       'Campo de Montiel',          'La Mancha',        '0034926215566'),
-  ('Charles',  'Dickens',       'Gad''s Hill Place',         'Higham',           '0441634406030'),
-  ('Sherlock', 'Holmes',        '221B Baker Street',         'London',           '0442079351269');
-
 INSERT INTO pets (name, birth_date, type_id, owner_id) VALUES
   ('Lassie',          DATE '2020-05-12', 2, 14),  -- Lassie Come-Home, Yorkshire
   ('Mittens',         DATE '2019-08-03', 1, 15),  -- Beatrix Potter's tales
@@ -82,7 +82,7 @@ INSERT INTO pets (name, birth_date, type_id, owner_id) VALUES
   ('Toby',            DATE '2020-09-14', 2, 19),  -- Wendy's neighbourhood dog
   ('Norbert',         DATE '2021-07-22', 3, 20),  -- Hagrid's Norwegian Ridgeback
   ('Crookshanks',     DATE '2019-03-15', 1, 21),  -- Hermione's half-Kneazle
-  ('Basilisk',        DATE '2022-10-05', 4, 22),  -- Salazar's basilisk
+  ('Basilisk',        DATE '2022-10-05', 4, 4),   -- Salazar's basilisk
   ('Snowy',           DATE '2018-06-20', 2, 23),  -- Tintin's Milou
   ('Lucifer',         DATE '2021-12-01', 1, 24),  -- Lady Tremaine's cat
   ('Jaq',             DATE '2024-02-11', 6, 24),  -- Cinderella's mouse friend
