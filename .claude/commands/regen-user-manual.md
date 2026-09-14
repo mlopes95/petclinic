@@ -40,14 +40,34 @@ If the discovered route list looks suspiciously short (fewer than 5 features), f
 
 For each feature area in route order, walk the happy path: list → detail → create → edit. Aim for 3–5 screenshots per feature, ~30–50 total.
 
-Use `chrome-devtools-mcp` tools:
+If the `playwright` MCP tools are not available in the session, drive the browser through the
+`browser-cli` skill instead and write the screenshots straight to `user-manual/screenshots/` —
+the output-dir constraint below is the MCP's, not Playwright's.
 
-- `mcp__plugin_chrome-devtools-mcp_chrome-devtools__new_page` to open `http://localhost:4200/<route>`
-- `mcp__plugin_chrome-devtools-mcp_chrome-devtools__resize_page` to set viewport to **1280×800**
-- `mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page`, `mcp__plugin_chrome-devtools-mcp_chrome-devtools__click`, `mcp__plugin_chrome-devtools-mcp_chrome-devtools__fill`, `mcp__plugin_chrome-devtools-mcp_chrome-devtools__fill_form` to drive the UI
-- `mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot` with `fullPage: true` and `format: "png"` to capture
+Use the `playwright` MCP. Call `mcp__playwright__browser_resize` **once** with
+`{width: 1280, height: 800}` — it sets the window, not a per-page viewport, so repeating it
+per route is wasted work. Then for each screen:
 
-Save each screenshot to `user-manual/screenshots/<feature>-<state>.png`. Naming: lowercase, hyphenated, descriptive of the state (`owners-list.png`, `owners-create.png`, `owners-detail.png`, `pets-add.png`, `visits-add.png`, etc.).
+1. `mcp__playwright__browser_navigate` → `http://localhost:4200/<route>`
+2. `mcp__playwright__browser_snapshot` — **required before any interaction**. Playwright
+   addresses elements by a `target` ref taken from the accessibility snapshot, so a click or
+   a fill invented from memory will fail. Re-snapshot after every navigation or submit.
+3. `mcp__playwright__browser_click` / `browser_type` / `browser_fill_form` / `browser_select_option`
+   to drive the UI, passing the `target` refs from that snapshot
+4. `mcp__playwright__browser_take_screenshot` with `{filename: "<feature>-<state>.png",
+   fullPage: true, type: "png", scale: "css"}`
+
+Naming: lowercase, hyphenated, descriptive of the state (`owners-list.png`, `owners-create.png`,
+`owners-detail.png`, `pets-add.png`, `visits-add.png`, etc.).
+
+⚠️ Screenshots do **not** land where the manual needs them. This MCP is launched with
+`--output-dir petclinic-test/.playwright-mcp` (see `.mcp.json`) and refuses to write outside it,
+so `filename` is a bare name, not a path. Once the crawl is done, move them across:
+
+```bash
+mkdir -p user-manual/screenshots
+mv petclinic-test/.playwright-mcp/*.png user-manual/screenshots/
+```
 
 If you create new owners/pets/visits while crawling for screenshots, that test data persists in the running database. That is acceptable — the manual is a screenshot artifact, not a state-restoring test.
 
