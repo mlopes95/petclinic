@@ -89,9 +89,13 @@ echo ""
 
 cd "$BACKEND_DIR"
 announce_exit_failures petclinic-backend
-JVM_ARGS="$(echo "$OTEL_JVM_ARGS $JACOCO_JVM_ARGS" | xargs)"
-if [[ -n "$JVM_ARGS" ]]; then
-  mvn clean spring-boot:run -Dspring-boot.run.jvmArguments="$JVM_ARGS"
+# jvmArguments is re-split on whitespace by the plugin, so each agent path is quoted:
+# a checkout under a directory with a space in its name otherwise hands the JVM half a path.
+JVM_ARG_LIST=()
+[[ -n "$OTEL_JVM_ARGS" ]] && JVM_ARG_LIST+=("\"$OTEL_JVM_ARGS\"")
+[[ -n "$JACOCO_JVM_ARGS" ]] && JVM_ARG_LIST+=("\"$JACOCO_JVM_ARGS\"")
+if [[ ${#JVM_ARG_LIST[@]} -gt 0 ]]; then
+  mvn clean spring-boot:run -Dspring-boot.run.jvmArguments="${JVM_ARG_LIST[*]}"
 else
   mvn clean spring-boot:run
 fi
