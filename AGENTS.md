@@ -97,6 +97,8 @@ audit visits. The skill itself knows nothing about this project, and a step this
 not describe is skipped and named on the built page. That is the only file to touch when a
 command here changes.
 
+**Tooling changes go to `main` first.** Any change to the guardrails, the anti-drift checks or the `/human-review` wiring (`human-review.json`, `scripts/`, genseq, Code City, traces) made while working on a downstream PR branch is committed on `main`, pushed, and then merged into that branch (e.g. `test-pr`) — never left living only on the PR.
+
 `scripts/ensure-human-review.sh` resolves it for the script that borrows its PlantUML
 differs (`petclinic-backend/docs/scripts/puml-diff/puml-diff-vs-git.sh`): `$CLAUDE_PLUGIN_ROOT`,
 then the installed plugin, then the marketplace's own clone, then a local checkout symlinked
