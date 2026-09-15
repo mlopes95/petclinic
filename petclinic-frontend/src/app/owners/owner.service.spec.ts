@@ -137,7 +137,7 @@ describe('OwnerService', () => {
     });
 
     const req = httpTestingController.expectOne(
-      ownerService.entityUrl + '?q=otter'
+      ownerService.entityUrl + '?search=otter'
     );
     expect(req.request.method).toEqual('GET');
     req.flush(expectedOwners);
@@ -148,7 +148,7 @@ describe('OwnerService', () => {
       expect(owners).toEqual(expectedOwners);
     });
 
-    const req = httpTestingController.expectOne(ownerService.entityUrl + '?q=');
+    const req = httpTestingController.expectOne(ownerService.entityUrl + '?search=');
     expect(req.request.method).toEqual('GET');
     req.flush(expectedOwners);
   });

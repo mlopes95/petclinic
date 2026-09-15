@@ -13,7 +13,6 @@ Browser -> Backend: List owners\nGET /api/owners
 activate Backend
 Backend -> Backend: [[src://petclinic-backend/src/main/java/victor/training/petclinic/repository/OwnerRepository.java:31{Click to open OwnerRepository.search} OwnerRepository.search ↗]]
 activate Backend
-Backend -> DB: petclinic
 Backend -> DB: [[genseq://1bpuv7a{Click for the statement behind this call} SELECT DISTINCT o FROM Owner o LEFT JOIN o.pets p WHERE LOWER(CONCAT(o.firstName, ' ', … ⊕]]
 deactivate Backend
 Backend -> DB: [[genseq://0j0trn8{Click for the statement behind this call} select pets ⊕]]

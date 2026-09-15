@@ -53,7 +53,7 @@ export class OwnerService {
   /** Matches the term against any column the owners list shows; an empty term lists everyone. */
   searchOwners(term: string): Observable<Owner[]> {
     return this.http
-      .get<Owner[]>(this.entityUrl, { params: { q: term } })
+      .get<Owner[]>(this.entityUrl, { params: { search: term } })
       .pipe(catchError(this.handlerError('searchOwners', [])));
   }
 }

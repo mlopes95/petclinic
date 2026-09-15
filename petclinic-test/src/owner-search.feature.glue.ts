@@ -45,7 +45,7 @@ When('I open the owners page', async function (this: PlaywrightWorld) {
 });
 
 When('I search owners for {string}', async function (this: PlaywrightWorld, search: string) {
-  await this.page.locator('#q').fill(search);
+  await this.page.locator('#search').fill(search);
   await this.page.locator('#search-owner-form button[type="submit"]').click();
 });
 

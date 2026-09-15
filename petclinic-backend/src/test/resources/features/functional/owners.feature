@@ -11,7 +11,7 @@ Feature: Owner management
       | George    | Franklin  |
       | Betty     | Davis     |
       | Harold    | Davis     |
-    When I GET "/api/owners?q=avi"
+    When I GET "/api/owners?search=avi"
     Then the response status is 200
     And the response JSON array has size 2
     And every item in the response has "lastName" equal to "Davis"
@@ -20,7 +20,7 @@ Feature: Owner management
     Given the following owners exist:
       | firstName | lastName  |
       | Betty     | Davis     |
-    When I GET "/api/owners?q=DAVIS"
+    When I GET "/api/owners?search=DAVIS"
     Then the response status is 200
     And the response JSON array has size 1
     And every item in the response has "lastName" equal to "Davis"

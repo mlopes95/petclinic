@@ -17,7 +17,7 @@ export interface paths {
   "/api/owners": {
     /**
      * List owners
-     * @description Lists owners, optionally filtered by q: a case-insensitive fragment matched against the full name, address, city, telephone or any pet name. Omitting q lists every owner.
+     * @description Lists owners, optionally filtered by search: a case-insensitive fragment matched against the full name, address, city, telephone or any pet name. Omitting search lists every owner.
      */
     get: operations["listOwners"];
     /** Create an owner */
@@ -558,7 +558,7 @@ export interface operations {
   };
   /**
    * List owners
-   * @description Lists owners, optionally filtered by q: a case-insensitive fragment matched against the full name, address, city, telephone or any pet name. Omitting q lists every owner.
+   * @description Lists owners, optionally filtered by search: a case-insensitive fragment matched against the full name, address, city, telephone or any pet name. Omitting search lists every owner.
    */
   listOwners: {
     parameters: {
@@ -567,7 +567,7 @@ export interface operations {
          * @description Case-insensitive fragment matched against any listed column
          * @example potter
          */
-        q?: string;
+        search?: string;
       };
     };
     responses: {

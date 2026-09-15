@@ -77,9 +77,9 @@ public class OwnerRestController {
     }
 
     @Operation(operationId = "listOwners", summary = "List owners",
-            description = "Lists owners, optionally filtered by q: a case-insensitive fragment "
+            description = "Lists owners, optionally filtered by search: a case-insensitive fragment "
                     + "matched against the full name, address, city, telephone or any pet name. "
-                    + "Omitting q lists every owner.")
+                    + "Omitting search lists every owner.")
     @ApiResponse(responseCode = "200", description = "OK",
             content = @Content(mediaType = "application/json",
                     array = @ArraySchema(schema = @Schema(implementation = OwnerDto.class)),
@@ -87,8 +87,8 @@ public class OwnerRestController {
     @GetMapping(produces = "application/json")
     public List<OwnerDto> listOwners(
             @Parameter(description = "Case-insensitive fragment matched against any listed column",
-                    example = "potter") @RequestParam(name = "q", defaultValue = "") String q) {
-        List<Owner> owners = ownerRepository.search(q);
+                    example = "potter") @RequestParam(name = "search", defaultValue = "") String searchTerm) {
+        List<Owner> owners = ownerRepository.search(searchTerm);
         return ownerMapper.toOwnerDtoCollection(owners);
     }
 

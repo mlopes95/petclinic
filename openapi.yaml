@@ -187,15 +187,15 @@ paths:
       - root-rest-controller
   /api/owners:
     get:
-      description: "Lists owners, optionally filtered by q: a case-insensitive fragment\
-        \ matched against the full name, address, city, telephone or any pet name.\
-        \ Omitting q lists every owner."
+      description: "Lists owners, optionally filtered by search: a case-insensitive\
+        \ fragment matched against the full name, address, city, telephone or any\
+        \ pet name. Omitting search lists every owner."
       operationId: listOwners
       parameters:
       - description: Case-insensitive fragment matched against any listed column
         example: potter
         in: query
-        name: q
+        name: search
         required: false
         schema:
           type: string

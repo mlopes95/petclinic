@@ -157,9 +157,9 @@ public class OwnerTest {
         return parseOwnerList(mockMvc.perform(get(uriTemplate)));
     }
 
-    /** Passes q as a request parameter so a search term may contain spaces. */
+    /** Passes the term as a request parameter so it may contain spaces. */
     private List<OwnerDto> searchFor(String query) throws Exception {
-        return parseOwnerList(mockMvc.perform(get("/api/owners").param("q", query)));
+        return parseOwnerList(mockMvc.perform(get("/api/owners").param("search", query)));
     }
 
     private int saveOwner(Consumer<Owner> customization) {

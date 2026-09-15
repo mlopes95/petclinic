@@ -136,7 +136,7 @@ which is a different and much cheaper thing: proxy URLs, no runner render, no pu
 `petclinic-test/src/owner-search.feature` is the contract for issue #24: a case-insensitive
 **contains** match over everything the owners table renders — the Name cell (first and last
 name as one value, so `Harry Pot` matches), Address, City, Telephone and the pet names.
-`GET /api/owners?q=` is the only search parameter; `?lastName=` is gone.
+`GET /api/owners?search=` is the only search parameter; `?lastName=` is gone.
 
 Two traps. The `otter` row expects Ronald Weasley beside the two Potters, because his city is
 *Ottery St Catchpole* — it is there to prove non-name columns are searched, so editing that
