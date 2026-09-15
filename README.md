@@ -81,7 +81,37 @@ The tasks below have the pattern: **<description>** – <prompt to paste to agen
 - **Grafana dashboard** — create a dashboard of what to monitor, then open it (start Grafana's Docker if needed).
 - **Latency study** — break down the time budget of a "search owners" click from recorded Grafana traces - where is most time lost?
 - **SQL** — export an Excel pie chart of the pet types querying `postgres-db`, and open it when ready.
-- **Query tuning** — optimize the "search owners by last name" query.
+- **Query tuning** — optimize the owner search query.
+  <details><summary>What this task is up against, now that Issue #24 has landed</summary>
+
+  **The query is no longer a prefix match.** `OwnerRepository.search` is a case-insensitive
+  `LIKE '%q%'` over every column the owners table shows: the full name as one value
+  (`CONCAT(firstName, ' ', lastName)`), address, city, telephone, plus `LEFT JOIN o.pets p` on
+  `p.name` — with `DISTINCT` to undo the join's row multiplication and `ORDER BY lastName, firstName`.
+
+  **So the cheap answer is gone.** A leading `%` means no B-tree index can serve this, not even a
+  functional index on `lower(last_name)` — which is exactly what would have fixed the old
+  `findByLastNameStartingWith`. What is left is a real decision:
+  - a `pg_trgm` GIN index per searched column, or over one generated concatenated column;
+  - a `tsvector` column, if you accept word-prefix semantics instead of true substring;
+  - a denormalised searchable-text column maintained by trigger, indexed either way.
+
+  Each changes what "matching" means at the edges. `petclinic-test/src/owner-search.feature` is the
+  contract — whatever you pick must keep it green.
+
+  **Measure before you tune.** `OwnerSearchThroughLatencyProxyTest` is the fixture: it boots against
+  the dev Postgres through the latency proxy `./start-database.sh` puts on port 15432, and is skipped
+  when that proxy is not listening. It is red today — ~16 req/s against a required 20, p95 ~235ms
+  against a required 200ms — and it was equally red before #24, so the contains-search did not cause it.
+
+  **The honest caveat: at 28 seeded owners the `LIKE` is not the bottleneck.** `GET /api/owners` runs
+  one search query and then one lazy `select pets` (and `select visits`) *per owner*, which is ~29+
+  round trips through the proxy per request. The N+1 is drawn, call by call, in
+  `petclinic-test/src/owner-search.feature.genseq.puml`. Indexing the search will not turn that test
+  green on its own; killing the N+1 (projection or entity graph) and paginating the endpoint is the
+  other half — and that half is deliberately not this task. Seed a few hundred thousand owners first
+  if you want the index to be the thing you are measuring.
+  </details>
 - **Speedup tests** — speedup the backend tests.
 - **Rule → guardrail** — replace the AGENTS.md rule "Keep line length < 120 chars" with a script that enforces it on `git push`, over the Java files the push actually changes.
 - **⭐DevOps drills** — seed a red pipeline, a latency incident or a stale runbook, then drive an agent to green: [`exercises/devops/`](exercises/devops/)

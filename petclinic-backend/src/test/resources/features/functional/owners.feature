@@ -5,15 +5,24 @@ Feature: Owner management
     Then the response status is 201
     And the owner is searchable by last name "Rodriquez"
 
-  Scenario: Search owners by last name
+  Scenario: Search owners by a fragment of the last name
     Given the following owners exist:
       | firstName | lastName  |
       | George    | Franklin  |
       | Betty     | Davis     |
       | Harold    | Davis     |
-    When I GET "/api/owners?lastName=Dav"
+    When I GET "/api/owners?q=avi"
     Then the response status is 200
     And the response JSON array has size 2
+    And every item in the response has "lastName" equal to "Davis"
+
+  Scenario: The search fragment is matched case-insensitively
+    Given the following owners exist:
+      | firstName | lastName  |
+      | Betty     | Davis     |
+    When I GET "/api/owners?q=DAVIS"
+    Then the response status is 200
+    And the response JSON array has size 1
     And every item in the response has "lastName" equal to "Davis"
 
   Scenario: Owner profile includes pets with their type

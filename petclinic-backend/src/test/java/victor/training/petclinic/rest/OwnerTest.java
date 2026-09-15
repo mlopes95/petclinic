@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import victor.training.petclinic.domain.Owner;
 import victor.training.petclinic.domain.Pet;
 import victor.training.petclinic.domain.PetType;
@@ -32,6 +34,7 @@ import victor.training.petclinic.rest.dto.PetDto;
 import victor.training.petclinic.rest.dto.PetTypeDto;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,6 +66,9 @@ public class OwnerTest {
 
     @Autowired
     PetTypeRepository petTypeRepository;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     int ownerId;
     int petId;
@@ -135,21 +141,8 @@ public class OwnerTest {
                 .contains(Assertions.tuple(ownerId, "George", "Franklin"));
     }
 
-    @Test
-    void getAllWithAddressFilter() throws Exception {
-        Owner owner2 = TestData.anOwner();
-        owner2.setLastName("JavaBeans");
-        int owner2Id = ownerRepository.save(owner2).getId();
-
-        List<OwnerDto> owners = search("/api/owners?lastName=Java");
-
-        assertThat(owners)
-                .extracting(OwnerDto::getId, OwnerDto::getLastName)
-                .contains(Assertions.tuple(owner2Id, "JavaBeans"));
-    }
-
-    private List<OwnerDto> search(String uriTemplate) throws Exception {
-        String responseJson = mockMvc.perform(get(uriTemplate))
+    private List<OwnerDto> parseOwnerList(ResultActions resultActions) throws Exception {
+        String responseJson = resultActions
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andReturn()
@@ -160,11 +153,131 @@ public class OwnerTest {
         });
     }
 
-    @Test
-    void getAllWithNameFilter_notFound() throws Exception {
-        List<OwnerDto> results = search("/api/owners?lastName=NonExistent");
+    private List<OwnerDto> search(String uriTemplate) throws Exception {
+        return parseOwnerList(mockMvc.perform(get(uriTemplate)));
+    }
 
-        assertThat(results).isEmpty();
+    /** Passes q as a request parameter so a search term may contain spaces. */
+    private List<OwnerDto> searchFor(String query) throws Exception {
+        return parseOwnerList(mockMvc.perform(get("/api/owners").param("q", query)));
+    }
+
+    private int saveOwner(Consumer<Owner> customization) {
+        Owner owner = TestData.anOwner();
+        customization.accept(owner);
+        return ownerRepository.save(owner).getId();
+    }
+
+    private void savePetOfTheOwner(String name) {
+        Owner owner = ownerRepository.findById(ownerId).orElseThrow();
+        Pet pet = new Pet();
+        pet.setName(name);
+        pet.setBirthDate(LocalDate.now());
+        pet.setOwner(owner);
+        pet.setType(petType);
+        owner.addPet(petRepository.save(pet));
+    }
+
+    @Test
+    void search_isCaseInsensitive() throws Exception {
+        assertThat(searchFor("frANKlin"))
+                .extracting(OwnerDto::getId)
+                .contains(ownerId);
+    }
+
+    @Test
+    void search_matchesInsideTheValue_notOnlyAtItsStart() throws Exception {
+        assertThat(searchFor("ankli"))
+                .extracting(OwnerDto::getId)
+                .contains(ownerId);
+    }
+
+    @Test
+    void search_spansFirstAndLastName() throws Exception {
+        assertThat(searchFor("George Frank"))
+                .extracting(OwnerDto::getId)
+                .contains(ownerId);
+    }
+
+    @Test
+    void search_matchesAddress() throws Exception {
+        int id = saveOwner(owner -> owner.setAddress("17 Quibbleton Mews"));
+
+        assertThat(searchFor("quibbleton"))
+                .extracting(OwnerDto::getId)
+                .containsExactly(id);
+    }
+
+    @Test
+    void search_matchesCity() throws Exception {
+        int id = saveOwner(owner -> owner.setCity("Quibbleton-on-Sea"));
+
+        assertThat(searchFor("quibbleton-on"))
+                .extracting(OwnerDto::getId)
+                .containsExactly(id);
+    }
+
+    @Test
+    void search_matchesTelephone() throws Exception {
+        int id = saveOwner(owner -> owner.setTelephone("0765009911"));
+
+        assertThat(searchFor("500991"))
+                .extracting(OwnerDto::getId)
+                .containsExactly(id);
+    }
+
+    @Test
+    void search_matchesPetName() throws Exception {
+        assertThat(searchFor("rosy"))
+                .extracting(OwnerDto::getId)
+                .containsExactly(ownerId);
+    }
+
+    @Test
+    void search_listsAMatchedOwnerOnce_evenWhenSeveralOfItsPetsMatch() throws Exception {
+        savePetOfTheOwner("Quibble One");
+        savePetOfTheOwner("Quibble Two");
+
+        assertThat(searchFor("quibble"))
+                .extracting(OwnerDto::getId)
+                .containsExactly(ownerId);
+    }
+
+    /** The pets join filters which owners match; it must never filter the pets they own. */
+    @Test
+    void search_byPetName_stillReturnsEveryPetOfTheMatchedOwner() throws Exception {
+        savePetOfTheOwner("Buddy");
+
+        List<OwnerDto> owners = searchFor("rosy");
+
+        assertThat(owners).hasSize(1);
+        assertThat(owners.get(0).getPets())
+                .extracting(PetDto::getName)
+                .containsExactlyInAnyOrder("Rosy", "Buddy");
+    }
+
+    @Test
+    void search_withAnEmptyQuery_returnsEveryOwner() throws Exception {
+        assertThat(searchFor("")).hasSize((int) ownerRepository.count());
+    }
+
+    /**
+     * A null column must not swallow the whole OR chain. The seed holds a phone-less owner,
+     * inserted as raw SQL because the entity's own @NotEmpty would reject it — so this does too.
+     */
+    @Test
+    void search_stillFindsAnOwnerWhoseTelephoneIsNull() throws Exception {
+        jdbc.update("INSERT INTO owners (first_name, last_name, address, city, telephone) "
+                + "VALUES (?, ?, ?, ?, NULL)", "Phoneless", "Quibbleton", "addr", "city");
+
+        assertThat(searchFor("quibbleton"))
+                .extracting(OwnerDto::getLastName)
+                .containsExactly("Quibbleton");
+    }
+
+    @Test
+    void search_withNoMatch_returnsEmpty() throws Exception {
+        assertThat(searchFor("NonExistent")).isEmpty();
     }
 
     @Test

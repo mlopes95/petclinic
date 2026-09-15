@@ -4,12 +4,31 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.Repository;
 import victor.training.petclinic.domain.Owner;
 
 public interface OwnerRepository extends Repository<Owner, Integer> {
 
-    List<Owner> findByLastNameStartingWith(String lastName);
+    /**
+     * Case-insensitive "contains" over every column the owners table shows: the full name as
+     * one cell, address, city, telephone, and the names of the owner's pets. An empty q matches
+     * everyone, since every value contains the empty string.
+     * <p>
+     * The pets join decides <em>which owners</em> match and must stay a plain join: turning it
+     * into a JOIN FETCH would narrow each owner's pets to the ones matching q.
+     */
+    @Query("""
+            SELECT DISTINCT o FROM Owner o
+            LEFT JOIN o.pets p
+            WHERE LOWER(CONCAT(o.firstName, ' ', o.lastName)) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(o.address) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(o.city) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(o.telephone) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))
+            ORDER BY o.lastName, o.firstName
+            """)
+    List<Owner> search(@Param("q") String q);
 
     Optional<Owner> findById(int id);
 

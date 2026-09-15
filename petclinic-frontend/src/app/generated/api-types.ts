@@ -15,7 +15,10 @@ export interface paths {
     patch: operations["redirectToSwagger_4"];
   };
   "/api/owners": {
-    /** List owners */
+    /**
+     * List owners
+     * @description Lists owners, optionally filtered by q: a case-insensitive fragment matched against the full name, address, city, telephone or any pet name. Omitting q lists every owner.
+     */
     get: operations["listOwners"];
     /** Create an owner */
     post: operations["addOwner"];
@@ -553,11 +556,18 @@ export interface operations {
       };
     };
   };
-  /** List owners */
+  /**
+   * List owners
+   * @description Lists owners, optionally filtered by q: a case-insensitive fragment matched against the full name, address, city, telephone or any pet name. Omitting q lists every owner.
+   */
   listOwners: {
     parameters: {
       query?: {
-        lastName?: string;
+        /**
+         * @description Case-insensitive fragment matched against any listed column
+         * @example potter
+         */
+        q?: string;
       };
     };
     responses: {

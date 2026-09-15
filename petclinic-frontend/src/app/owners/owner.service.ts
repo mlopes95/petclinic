@@ -50,13 +50,10 @@ export class OwnerService {
       .pipe(catchError(this.handlerError('deleteOwner', [ownerId])));
   }
 
-  searchOwners(lastName: string): Observable<Owner[]> {
-    let url = this.entityUrl;
-    if (lastName !== undefined) {
-      url += '?lastName=' + lastName;
-    }
+  /** Matches the term against any column the owners list shows; an empty term lists everyone. */
+  searchOwners(term: string): Observable<Owner[]> {
     return this.http
-      .get<Owner[]>(url)
+      .get<Owner[]>(this.entityUrl, { params: { q: term } })
       .pipe(catchError(this.handlerError('searchOwners', [])));
   }
 }

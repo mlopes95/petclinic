@@ -131,14 +131,24 @@ describe('OwnerService', () => {
     req.flush(null);
   });
 
-  it('search owners by last name prefix', () => {
-    ownerService.searchOwners('Fr').subscribe((owners) => {
+  it('search owners by a fragment of any listed column', () => {
+    ownerService.searchOwners('otter').subscribe((owners) => {
       expect(owners).toEqual(expectedOwners);
     });
 
     const req = httpTestingController.expectOne(
-      ownerService.entityUrl + '?lastName=Fr'
+      ownerService.entityUrl + '?q=otter'
     );
+    expect(req.request.method).toEqual('GET');
+    req.flush(expectedOwners);
+  });
+
+  it('search owners with an empty term still asks the server for the full list', () => {
+    ownerService.searchOwners('').subscribe((owners) => {
+      expect(owners).toEqual(expectedOwners);
+    });
+
+    const req = httpTestingController.expectOne(ownerService.entityUrl + '?q=');
     expect(req.request.method).toEqual('GET');
     req.flush(expectedOwners);
   });

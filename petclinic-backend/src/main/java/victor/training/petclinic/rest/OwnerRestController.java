@@ -35,6 +35,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -75,14 +76,19 @@ public class OwnerRestController {
         this.visitMapper = visitMapper;
     }
 
-    @Operation(operationId = "listOwners", summary = "List owners")
+    @Operation(operationId = "listOwners", summary = "List owners",
+            description = "Lists owners, optionally filtered by q: a case-insensitive fragment "
+                    + "matched against the full name, address, city, telephone or any pet name. "
+                    + "Omitting q lists every owner.")
     @ApiResponse(responseCode = "200", description = "OK",
             content = @Content(mediaType = "application/json",
                     array = @ArraySchema(schema = @Schema(implementation = OwnerDto.class)),
                     examples = @ExampleObject(name = "sample", value = ApiExamples.OWNERS)))
     @GetMapping(produces = "application/json")
-    public List<OwnerDto> listOwners(@RequestParam(name = "lastName", defaultValue = "") String lastName) {
-        List<Owner> owners = ownerRepository.findByLastNameStartingWith(lastName);
+    public List<OwnerDto> listOwners(
+            @Parameter(description = "Case-insensitive fragment matched against any listed column",
+                    example = "potter") @RequestParam(name = "q", defaultValue = "") String q) {
+        List<Owner> owners = ownerRepository.search(q);
         return ownerMapper.toOwnerDtoCollection(owners);
     }
 

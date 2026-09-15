@@ -11,9 +11,8 @@ import { finalize } from 'rxjs/operators';
 })
 export class OwnerListComponent implements OnInit {
   errorMessage: string;
-  lastName: string;
+  searchTerm: string = '';
   owners: Owner[];
-  listOfOwnersWithLastName: Owner[];
   isOwnersDataReceived: boolean = false;
 
   constructor(private router: Router, private ownerService: OwnerService) {
@@ -38,35 +37,7 @@ export class OwnerListComponent implements OnInit {
     this.router.navigate(['/owners/add']);
   }
 
-  searchByLastName(lastName: string)
-  {
-      console.log('inside search by last name starting with ' + (lastName));
-      if (lastName === '')
-      {
-        this.ownerService.getOwners()
-          .subscribe(
-            (owners) => {
-              this.owners = owners;
-            });
-      }
-      if (lastName !== '')
-      {
-        this.ownerService.searchOwners(lastName)
-          .subscribe(
-            (owners) => {
-
-              this.owners = owners;
-              console.log('this.owners ' + this.owners);
-
-            },
-            (error) =>
-            {
-              this.owners = null;
-            }
-          );
-
-      }
+  search(term: string) {
+    this.ownerService.searchOwners(term).subscribe(owners => this.owners = owners);
   }
-
-
 }
