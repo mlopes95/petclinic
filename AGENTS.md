@@ -57,6 +57,15 @@ checks and what each of them asserts are described in [GUARDRAILS.md](GUARDRAILS
 To see how the pieces fit together, every diagram generated from the code is rendered in
 [ARCHITECTURE.md](ARCHITECTURE.md).
 
+### Every change starts as OpenSpec markdown
+Any feature or non-trivial change is planned first with `/opsx:propose` (or `/opsx:new` +
+`/opsx:continue`), which writes `openspec/changes/<name>/` — `proposal.md`, `specs/<capability>/spec.md`,
+`design.md`, `tasks.md` — and only then implemented with `/opsx:apply`. Never jump from a ticket
+or a design note straight to code. The per-artifact rules live in `openspec/config.yaml`:
+`proposal.md` is for the business reader (screenshot of the screen today, no code identifiers —
+those go to `design.md`), and `spec.md` ends with a Gherkin sketch that reuses the steps already
+bound in `petclinic-test/src/*.glue.ts`.
+
 ### Frontend UX design system
 `petclinic-frontend/src/app/design-system/` holds the standardised widgets. Every
 single-select in a form goes through `<app-combo>` (`ComboComponent`), a

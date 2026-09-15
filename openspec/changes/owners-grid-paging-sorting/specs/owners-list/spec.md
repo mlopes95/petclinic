@@ -173,3 +173,59 @@ SHALL be shown alone with no comma.
 #### Scenario: Missing part
 - **WHEN** an owner has last name "Potter" and no first name
 - **THEN** the UI shows "Potter"
+
+## Gherkin sketch for `petclinic-test/src/owners-grid.feature`
+
+Runs against the seeded clinic, read-only. Steps marked *(existing)* are already bound in
+`owner-search.feature.glue.ts`; the four others are new. Names use the "Last, First" form and
+`;` as the list separator, which is what the glue switches to with this change.
+
+```gherkin
+Feature: Owners grid — sort by a column, browse by pages
+  As a clinic user
+  I want the owners list sorted by the column I pick and split into pages
+  So that a clinic with 100.000 owners stays readable
+
+  Background:
+    Given the clinic has these owners            # existing
+      | Darling, George  |
+      | Darling, Wendy   |
+      | Dickens, Charles |
+      | Dolittle, John   |
+
+  Scenario Outline: Sorting by Name uses last name, then first name; by City, then id
+    When I open the owners page                   # existing
+    And I search owners for "D"                   # existing
+    And I sort owners by "<column>" <direction>   # new
+    Then the owners are listed in this order: "<owners>"   # new, order-sensitive
+
+    Examples:
+      | column | direction  | owners                                                              |
+      | Name   | ascending  | Darling, George; Darling, Wendy; Dickens, Charles; Dolittle, John   |
+      | Name   | descending | Dolittle, John; Dickens, Charles; Darling, Wendy; Darling, George   |
+      | City   | ascending  | Dickens, Charles; Darling, George; Darling, Wendy; Dolittle, John   |
+
+  Scenario Outline: A page holds only its slice of the sorted clinic
+    When I open the owners page                   # existing
+    And I show <size> owners per page             # new
+    And I go to page <page>                       # new
+    Then exactly these owners are listed: "<owners>"   # existing, order-insensitive
+
+    Examples:
+      | size | page | owners                                                                                             |
+      | 5    | 5    | Riddle, Tom; Scamander, Newt; Schroedinger, Erwin; Silver, Long; Śliwiński, Salazar                |
+      | 5    | 6    | Tremaine, Lady; Weasley, Ronald; Wensleydale, Wallace                                              |
+      | 20   | 2    | Riddle, Tom; Scamander, Newt; Schroedinger, Erwin; Silver, Long; Śliwiński, Salazar; Tremaine, Lady; Weasley, Ronald; Wensleydale, Wallace |
+
+  Scenario: Walking every page lists each owner exactly once
+    When I open the owners page                   # existing
+    And I show 5 owners per page                  # new
+    Then every owner in the clinic is listed      # existing — re-bound to walk the pages
+```
+
+What each row pins:
+- Name ascending: the two Darlings prove the first-name tiebreak; descending proves it flips.
+- City ascending: Higham < London < Puddleby, and the two London rows keep id order.
+- Page 5 of 5: "Śliwiński" lands beside "Silver" — under the default collation it would be
+  alone at the end, on page 6. Page 6 of 5: 28 owners = 5 full pages + 3.
+- Size 20, page 2: the same 8 tail owners, so switching size does not lose or duplicate rows.

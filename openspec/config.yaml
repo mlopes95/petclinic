@@ -8,6 +8,8 @@ rules:
     - "Write for a business reader: no code identifiers, class/DTO/file names, HTTP verbs or status codes, query parameters, JSON field names, SQL, index or migration names, library or framework names."
     - "Describe changes as what users and the business observe. Anything about how it is built goes to design.md; end the proposal with one line pointing there."
     - "Keep the Capabilities and Impact sections in plain language too: name screens, roles and consumers, not modules or endpoints."
+  specs:
+    - "End the spec with a Gherkin sketch in a ```gherkin block: Scenario Outlines with small Examples tables, reusing the steps already bound in petclinic-test/src/*.glue.ts (mark each step existing/new). Use the seeded data and keep it read-only on the DB."
 
 # Project context (optional)
 # This is shown to AI when creating artifacts.
