@@ -66,6 +66,12 @@ or a design note straight to code. The per-artifact rules live in `openspec/conf
 those go to `design.md`), and `spec.md` ends with a Gherkin sketch that reuses the steps already
 bound in `petclinic-test/src/*.glue.ts`.
 
+**`/opsx:apply` runs the whole `tasks.md` to completion in one sitting.** Never stop partway
+through a task list to "check in" once work is underway — keep going section by section (backend,
+frontend, e2e, docs, wrap-up) until every task is checked off or you hit a genuine blocker (an
+ambiguous requirement, a design issue the artifacts don't cover, a failing check you can't
+resolve). A natural-seeming pause point between sections is not a blocker.
+
 ### Frontend UX design system
 `petclinic-frontend/src/app/design-system/` holds the standardised widgets. Every
 single-select in a form goes through `<app-combo>` (`ComboComponent`), a
