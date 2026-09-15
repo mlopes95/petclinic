@@ -30,7 +30,7 @@ POINTER='@AGENTS.md'
 # repository, and it meant every clone carried a symlink that resolved to nothing
 # for everyone but its author. The skill is a plugin now — see AGENTS.md — so a
 # local checkout is symlinked in untracked and gitignored instead.
-ALLOWED_SYMLINKS=(.github/skills)
+ALLOWED_SYMLINKS=(.github/skills .junie/skills)
 
 fail=0
 err() { echo "[agents-md] ❌ $*"; fail=1; }
