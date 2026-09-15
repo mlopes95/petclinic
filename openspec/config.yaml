@@ -1,5 +1,14 @@
 schema: spec-driven
 
+# proposal.md is read by business people in review meetings. Technical detail belongs in
+# design.md, so a reader who has never seen JSON can review the proposal end to end.
+rules:
+  proposal:
+    - "Open with a `## Today` section holding one screenshot of the screen the change touches, taken from the running app (Playwright MCP or the browser tools) and saved next to proposal.md as `<screen>-before.png`, with an alt text saying what the reader should notice. It is the visual anchor of the review meeting. If the app is not running and cannot be started, reuse the matching screenshot from `user-manual/` and say so in the alt text; if the change has no screen, write one sentence saying which non-visual surface it touches instead."
+    - "Write for a business reader: no code identifiers, class/DTO/file names, HTTP verbs or status codes, query parameters, JSON field names, SQL, index or migration names, library or framework names."
+    - "Describe changes as what users and the business observe. Anything about how it is built goes to design.md; end the proposal with one line pointing there."
+    - "Keep the Capabilities and Impact sections in plain language too: name screens, roles and consumers, not modules or endpoints."
+
 # Project context (optional)
 # This is shown to AI when creating artifacts.
 # Add your tech stack, conventions, style guides, domain knowledge, etc.

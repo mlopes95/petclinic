@@ -145,6 +145,21 @@ After completing all artifacts, summarize:
 
 **Artifact Creation Guidelines**
 
+**Screenshot rule for `proposal.md`**: it opens with a `## Today` section holding one
+screenshot of the screen the change touches, taken from the running app (Playwright MCP or
+the browser tools, viewport about 1200×900) and saved next to `proposal.md` as
+`<screen>-before.png`, with an alt text naming what the reader should notice. It is the
+visual anchor of the review meeting. If the app is not running and cannot be started, reuse
+the matching screenshot from `user-manual/` and say so in the alt text; a change with no
+screen states in one sentence which non-visual surface it touches instead.
+
+**Audience rule for `proposal.md`**: it is read by business people in review meetings. Keep
+it free of code identifiers, class/DTO/file names, HTTP verbs and status codes, query
+parameters, JSON field names, SQL, migration or index names, and library names. State what
+users and the business will observe; everything about *how* goes to `design.md`, and the
+proposal ends with one line pointing there. If a sentence would need explaining to someone
+who has never seen JSON, it belongs in `design.md`.
+
 - Follow the `instruction` field from `openspec instructions` for each artifact type - it is the authoritative guidance, even for familiar artifact names
 - If the `instruction` field directs you to use a specific skill or command to create the artifact, invoke it instead of writing the artifact directly
 - The schema defines what each artifact should contain - follow it
