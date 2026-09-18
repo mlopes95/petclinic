@@ -12,6 +12,11 @@
       "drawio": {
         "diagram": "petclinic-backend/docs/ConceptualModel.drawio.png",
         "concepts": "petclinic-backend/docs/generated/DomainModel.puml",
+        "//redraw": "conceptual-model-patch.py draws what the code has and the map lacks,",
+        "//redraw2": "in red, and leaves it red until a human lays it out. Named here so the",
+        "//redraw3": "review page can offer to start over: restore the drawing to the base",
+        "//redraw4": "and let the script draw the branch's additions again.",
+        "redraw": "python3 petclinic-backend/docs/scripts/conceptual-model-patch.py",
         "name": "conceptual"
       }
     },
@@ -22,29 +27,59 @@
         "cd petclinic-test && GENSEQ_REFRESH=1 npm run trace:diagram"
       ]
     },
+    "c2": {
+      "//": "The C4 container view, PROJECTED from the sequence diagrams the step above",
+      "//2": "draws. Nothing here is a drawing, and every key is optional: with no `c2`",
+      "//3": "block at all the tab is still built, from the lifelines and arrows alone.",
+      "//4": "`containers` corrects the only thing a sequence diagram cannot say — what",
+      "//5": "KIND of thing a lifeline is — and names the stack, which is never guessed.",
+      "//6": "`drop` on the Java suite is the important one. A C2 shows what is DEPLOYED,",
+      "//7": "and a @SpringBootTest calling controllers through MockMvc is deployed",
+      "//8": "nowhere: it is a synthetic client, in-process, with no browser, no socket",
+      "//9": "and no server. It draws a fine sequence diagram — that is the Sequence",
+      "//10": "tab's job — and a box here that no operator could point at. The Playwright",
+      "//11": "suite is the opposite case and stays — but it is not what the box is",
+      "//12": "called. The container is the BROWSER running the Angular app; Playwright",
+      "//13": "and Chromium are how this repository happens to drive it in CI, which is",
+      "//14": "a fact about the test rig and not about anything that ships.",
+      "//15": "`Test` -> `as` folds the base branch's older participant name in first, so",
+      "//16": "one `drop` covers a suite that renamed its own lifeline on this branch.",
+      "//17": "`Notification module` -> `as: Backend` for the opposite reason to the drop",
+      "//18": "above: it is a real lifeline in the sequence diagrams, because it is worth",
+      "//19": "seeing a call leave the module — but it is not a deployed thing. It ships",
+      "//20": "inside the backend jar, in the backend's process. Folding it onto Backend",
+      "//21": "keeps its outgoing call on the C2 as `Backend -> SMS gateway`, which is what",
+      "//22": "an operator would actually see on the wire.",
+      "system": "PetClinic",
+      "containers": {
+        "Browser": {"kind": "container", "tech": "Angular 16"},
+        "Client": {"as": "Spring Boot test"},
+        "Test": {"as": "Spring Boot test"},
+        "Spring Boot test": {"drop": true},
+        "Backend": {"kind": "container", "tech": "Java 21 / Spring Boot 3.5"},
+        "Notification module": {"as": "Backend"},
+        "SMS gateway": {"kind": "external", "tech": "SMS provider (simulated)"},
+        "DB": {"kind": "db", "tech": "PostgreSQL"}
+      }
+    },
     "city": {
-      "//": "`tests` runs before the city is drawn: its CRAP and coverage colours need a",
-      "//2": "JaCoCo report, and -Dmaven.test.failure.ignore=true is what makes the report",
-      "//3": "goal run at all when a test fails. Without it Maven aborts in the test phase",
-      "//4": "and the city is coloured from whatever stale report was left on disk.",
-      "//5": "`baseline` is the coverage the default branch measured and committed; the",
-      "//6": "page reads it out of git at the diff's base ref to draw the before/after of",
-      "//7": "coverage and CRAP, with no second checkout and no second test run. Refresh it",
-      "//8": "only on the default branch: regenerate-codecity.sh --write-baseline.",
-      "//9": "Two suites, measured separately. The unit run instruments its own JVM;",
-      "//10": "the acceptance run drives a SEPARATELY started backend, which is given its",
-      "//11": "own agent by JACOCO_E2E=1 and dumped in Playwright's globalTeardown while",
-      "//12": "it is still up. The last command merges the two .exec files into the two",
-      "//13": "reports the city colours by: everything, and the browser alone.",
+      "//": "`tests` is here for the TRACES, not for the city: it is the browser run whose",
+      "//2": "Playwright report the Tests tab harvests, which is why PW_TRACE=on and why the",
+      "//3": "`traces` step below runs nothing of its own. Recording the same suite twice",
+      "//4": "would double the longest step on the page for a second, differently-flaky",
+      "//5": "opinion about the same branch.",
+      "//6": "It used to carry two more commands and two more keys: an instrumented",
+      "//7": "`mvn test`, JACOCO_E2E=1 on the acceptance run, a jacoco:merge, plus",
+      "//8": "`acceptance` and `baseline`. All of that existed for the city's CRAP and",
+      "//9": "coverage colours, which are switched off in code-city itself now (generate.sh",
+      "//10": "step [3]) — the four options stay in its COLOR dropdown marked unavailable.",
+      "//11": "Minutes of Maven and a second Playwright run per review, for two colours",
+      "//12": "nothing draws any more. The committed coverage-baseline.tsv went with them.",
       "tests": [
-        "cd petclinic-backend && mvn -o test -Dmaven.test.failure.ignore=true",
-        "cd petclinic-test && JACOCO_E2E=1 PW_TRACE=on npm test",
-        "cd petclinic-backend && mvn -o -q jacoco:merge@merge-all jacoco:report@report-all jacoco:report@report-acceptance"
+        "cd petclinic-test && PW_TRACE=on npm test"
       ],
       "out": "petclinic-backend/docs/generated/codecity",
-      "title": "Code City",
-      "acceptance": "petclinic-backend/target/site/jacoco-acceptance/jacoco.xml",
-      "baseline": "petclinic-backend/docs/generated/codecity/coverage-baseline.tsv"
+      "title": "Code City"
     },
     "traces": {
       "//": "Playwright's own recordings of the run, carried onto the page so a reviewer",
@@ -66,13 +101,26 @@
       "limit": 16
     },
     "video": {
-      "out": ".human-review/assets/feature.webm"
+      "//": "`app` is how the run gets the application the film is recorded against, and",
+      "//2": "it exists because the recorder's old liveness check tested the PORT, not the",
+      "//3": "commit: anything answering on :4200 and :8080 was filmed. This machine keeps",
+      "//4": "several checkouts of this repository (petclinic, petclinic-main,",
+      "//5": "petclinic-pr) and each can serve :4200 — so on 17 Sep 2026 a review of",
+      "//6": "test-pr shipped a film of main, narrated from test-pr's diff, with every",
+      "//7": "caption asserting what the frames denied.",
+      "//8": "Now the run owns its own instance: `up` builds the commit under review into",
+      "//9": "containers of its own and prints the host port it got, `down` runs in a",
+      "//10": "finally. {sha}/{shortsha} come from `git rev-parse HEAD`, never from here.",
+      "//11": "--ttl 1800 because this instance exists for one 40-second take; the default",
+      "//12": "two idle hours would keep a whole stack up long after the film was cut.",
+      "out": ".human-review/assets/feature.webm",
+      "app": {
+        "up": "./start-docker.sh up --ref {sha} --ttl 1800",
+        "url": "./start-docker.sh url petclinic-{shortsha}",
+        "down": "./start-docker.sh down petclinic-{shortsha}"
+      }
     },
-    "complexity": {
-      "extract": "cd petclinic-backend && mvn -q test -Dtest=EndpointComplexityExtractorTest",
-      "before": ".human-review/assets/complexity-before.json",
-      "after": "petclinic-backend/docs/generated/endpoint-complexity.json"
-    },
+    "//complexity": "Nothing to configure: EndpointComplexityExtractorTest was removed from this repo on 4 Sep 2026, and /human-review measures both sides itself now (endpoint-complexity.py), reading the baseline from the merge-base.",
     "logging": {
       "paths": ["petclinic-backend"]
     },

@@ -155,8 +155,11 @@ test('payloads stay off unless asked for', () => {
 test('the generated-file warning rides the footer, not a legend box', () => {
   const puml = spansToPuml(parseTempoTrace(fixture), 'add a visit', {...STATIC, sql: 'values', httpBodies: true});
   expect(puml).not.toContain('legend');
+  // …and the file, since the title stopped naming it: a .puml pasted into a slide is read
+  // with nothing around it to say where it came from.
   expect(puml).toContain(
-    'footer @generate_sequence — generated from real traces of end-to-end test runs, do not edit ❗');
+    'footer @generate_sequence in add a visit — generated from real traces of end-to-end '
+    + 'test runs, do not edit ❗');
 });
 
 test('no npm command or env var is drawn into the picture', () => {
@@ -172,7 +175,7 @@ const lonelyClick: NormSpan[] = [{
   kind: 'INTERNAL', serviceName: 'petclinic-frontend', startNano: 1, attributes: {},
 }];
 
-// One diagram per source file, one section per scenario in it — a scenario's
+// One diagram per scenario — a scenario's
 // several traces (each browser interaction opens its own) run together inside
 // its section, because the reader thinks in scenarios, not in traces.
 test('renderPuml titles by source file and sections by scenario', () => {
@@ -197,9 +200,49 @@ test('renderPuml drops traces that would draw nothing', () => {
     {title: 'Clicked around', traces: [lonelyClick]},
   ]);
 
-  expect(puml).toContain('== Add a visit ==');
-  expect(puml).not.toContain('== Clicked around ==');
+  // Two scenarios in, one drawn — so what comes out is a solo diagram: the survivor
+  // names the picture, and there is no chapter left to divide it from.
+  expect(puml).toContain('title Add a visit');
+  expect(puml).not.toContain('Clicked around');
+  expect(puml).not.toContain('== ');
   expect(puml).toContain(ADD_VISIT);
+});
+
+// Several chapters still divide, because then there is something to divide.
+test('two scenarios that both draw keep their dividers, and the file stays the title', () => {
+  const puml = renderPuml('add-visit.spec.ts', [
+    {title: 'Add a visit', traces: [parseTempoTrace(fixture)]},
+    {title: 'Add another', traces: [parseTempoTrace(fixture)]},
+  ]);
+
+  expect(puml).toContain('title add-visit.spec.ts');
+  expect(puml).toContain('== Add a visit ==');
+  expect(puml).toContain('== Add another ==');
+});
+
+// A Java method name read back as a sentence is half a name: `remembers the vet who
+// attended it` says nothing about which class, and therefore which endpoint, it is about.
+// The page that lists these pictures lists them by their headings, so the heading carries
+// the class. A .feature/.spec.ts title is already a whole sentence and keeps it.
+test('a Java scenario is headed by its class, a Playwright one by itself', () => {
+  const java = renderPuml(
+    'petclinic-backend/src/test/java/victor/training/petclinic/rest/AddVisitApiTest.java',
+    [{title: 'remembers the vet who attended it', traces: [parseTempoTrace(fixture)]}]);
+  expect(java).toContain('title AddVisitApiTest: remembers the vet who attended it');
+
+  const spec = renderPuml('add-visit.spec.ts',
+    [{title: 'Add a visit', traces: [parseTempoTrace(fixture)]}]);
+  expect(spec).toContain('title Add a visit');
+
+  // Two chapters in one Java file are two qualified headings, for the same reason.
+  const two = renderPuml(
+    'petclinic-backend/src/test/java/victor/training/petclinic/rest/AddVisitApiTest.java',
+    [
+      {title: 'adds a visit', traces: [parseTempoTrace(fixture)]},
+      {title: 'remembers the vet', traces: [parseTempoTrace(fixture)]},
+    ]);
+  expect(two).toContain('== AddVisitApiTest: adds a visit ==');
+  expect(two).toContain('== AddVisitApiTest: remembers the vet ==');
 });
 
 // ── progressive disclosure ────────────────────────────────────────────────────
@@ -534,4 +577,45 @@ test('a Java diagram names the annotation a @SpringBootTest actually carries', (
 
   const spec = renderPuml('src/add-visit.spec.ts', [{title: 'adds a visit', traces: []}], STATIC);
   expect(spec).toContain('footer @generate_sequence');
+});
+
+// ── A module of the backend, drawn as a participant of its own ───────────────────
+// Same mechanism as `Test` above, used for the opposite reason: the Notification module
+// runs *inside* the backend, so nothing in the trace separates it either. It names its
+// own lifeline, and the (fake) SMS gateway it calls names another — which is how a
+// reader sees a call leaving the module at all.
+//
+// Neither name is a bare PlantUML identifier, so both have to be quoted everywhere they
+// appear, or `participant Notification module` is a syntax error and every arrow after
+// it is drawn against a lifeline called `Notification`.
+test('a multi-word participant is quoted on its declaration and on every arrow', () => {
+  const spans: NormSpan[] = [
+    {
+      traceId: 'n', spanId: 'n-server', parentSpanId: '', name: 'POST /api/owners/1/pets/3/visits',
+      kind: 'SERVER', serviceName: 'petclinic-backend', startNano: 1_000 * 1e6,
+      attributes: {'http.status_code': '201'},
+    },
+    {
+      traceId: 'n', spanId: 'n-notify', parentSpanId: 'n-server', name: 'notify-visit-booked',
+      kind: 'INTERNAL', serviceName: 'petclinic-backend', startNano: 1_100 * 1e6,
+      attributes: {'genseq.participant': 'Notification module'},
+    },
+    {
+      traceId: 'n', spanId: 'n-sms', parentSpanId: 'n-notify', name: 'send-sms',
+      kind: 'INTERNAL', serviceName: 'petclinic-backend', startNano: 1_200 * 1e6,
+      attributes: {'genseq.participant': 'SMS gateway'},
+    },
+  ];
+  const puml = renderPuml('src/add-visit.spec.ts', [{
+    title: 'books a visit', traces: [spans],
+  }], STATIC);
+
+  expect(puml).toContain('participant "Notification module"');
+  expect(puml).toContain('participant "SMS gateway"');
+  expect(puml).toContain('Backend -> "Notification module": notify-visit-booked');
+  expect(puml).toContain('"Notification module" -> "SMS gateway": send-sms');
+  expect(puml).toContain('activate "Notification module"');
+  expect(puml).toContain('deactivate "Notification module"');
+  // the one-word lifelines are left exactly as they were: the .puml is diffed textually
+  expect(puml).toContain('participant Backend');
 });

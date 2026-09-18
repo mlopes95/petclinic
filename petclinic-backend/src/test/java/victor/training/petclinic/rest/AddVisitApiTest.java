@@ -36,7 +36,7 @@ import victor.training.petclinic.tools.PrettyTestNames;
 /**
  * The same journey as petclinic-test/src/add-visit.spec.ts, one layer down: no Chromium, no Angular,
  * no running server — and the same picture out the other end
- * (AddVisitSequenceTest.java.genseq.puml, drawn beside this file).
+ * (AddVisitApiTest.java.<test>.genseq.puml, one per test method, beside this file).
  * <p>
  * Put next to the other REST tests on purpose. The claim being made is that any @SpringBootTest here
  * becomes a sequence diagram by adding one annotation and saying its sentences out loud; a demo
@@ -57,8 +57,7 @@ import victor.training.petclinic.tools.PrettyTestNames;
 // picture is JUnit's arbitrary method order — and adding a test reshuffles every section, which
 // the differ can only report as a rewrite. @Order makes the diagram read the way this file does.
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@GenerateSequence
-class AddVisitSequenceTest {
+class AddVisitApiTest {
 
     private static final String VISIT_DATE = "2026-05-12";
 
@@ -67,6 +66,10 @@ class AddVisitSequenceTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // On the method, not on the class: this is the one run worth a picture. The class is
+    // where the controller's cheap end-to-end tests collect, and annotating it would draw
+    // every one of them.
+    @GenerateSequence
     @Test
     @Order(1)
     void addsAVisitToAnExistingPet() throws Exception {

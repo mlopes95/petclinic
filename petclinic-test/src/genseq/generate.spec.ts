@@ -3,7 +3,7 @@ import {parseTempoTrace} from './trace-to-puml';
 import {DETAIL_INDEX_VERSION} from './detail-index';
 import * as fs from 'fs';
 import * as path from 'path';
-import {CachedSource, GenerateDeps, JAVA_SOURCES, TestWindow, detailsPathFor, diagramPathFor, generateFromWindows, mergeCachedSources, ownedSourcesFromEnv, renderScenarios, slugify, spanCachePathFor} from './generate';
+import {CachedSource, GenerateDeps, JAVA_SOURCES, TestWindow, detailsPathFor, diagramPathFor, generateFromWindows, mergeCachedSources, ownedSourcesFromEnv, renderScenarios, slugify, spanCachePathFor, uniqueSlugs} from './generate';
 
 const fixture = JSON.parse(
   fs.readFileSync(path.join(__dirname, '__fixtures__', 'add-visit-trace.json'), 'utf-8'),
@@ -15,7 +15,7 @@ const fixture = JSON.parse(
 // the replay-the-cache path and silently re-rendered the previous run's diagrams instead.
 test('GENSEQ_SUITE=java makes a run own the .java sources', () => {
   expect(ownedSourcesFromEnv({GENSEQ_SUITE: 'java'})).toBe(JAVA_SOURCES);
-  expect(JAVA_SOURCES.test('petclinic-backend/src/test/java/.../AddVisitSequenceTest.java')).toBe(true);
+  expect(JAVA_SOURCES.test('petclinic-backend/src/test/java/.../AddVisitApiTest.java')).toBe(true);
   expect(JAVA_SOURCES.test('src/add-visit.spec.ts')).toBe(false);
 });
 
@@ -32,15 +32,27 @@ test('slugify makes filesystem-safe names', () => {
   expect(slugify('Add a visit!')).toBe('add-a-visit');
 });
 
-test('the diagram is filed next to its test, named after it', () => {
-  expect(diagramPathFor('/root', 'src/owner-search.feature'))
-    .toBe('/root/src/owner-search.feature.genseq.puml');
-  expect(diagramPathFor('/root', 'src/add-visit.spec.ts'))
-    .toBe('/root/src/add-visit.spec.ts.genseq.puml');
+test('the diagram is filed under generated/, named after the test and the scenario', () => {
+  expect(diagramPathFor('/root', 'src/owner-search.feature', 'lists-every-owner'))
+    .toBe('/root/generated/owner-search.feature.lists-every-owner.genseq.puml');
+  expect(diagramPathFor('/root', 'src/add-visit.spec.ts', 'add-a-visit'))
+    .toBe('/root/generated/add-visit.spec.ts.add-a-visit.genseq.puml');
+  // A Java suite's source climbs out of this module; only its base name lands here, and
+  // the path back to it rides inside the picture as the src:// handle on its title.
+  expect(diagramPathFor('/root', '../petclinic-backend/src/test/java/x/AddVisitApiTest.java',
+    'adds-a-visit')).toBe('/root/generated/AddVisitApiTest.java.adds-a-visit.genseq.puml');
 });
 
-// One file per source, however many tagged scenarios it holds — they become
-// sections of the same diagram rather than files scattered by scenario name.
+// Two titles can slugify the same way, and two pictures writing to one path would leave
+// the second silently standing in for both.
+test('scenarios whose titles collide get numbered, in declaration order', () => {
+  expect(uniqueSlugs(['Add a visit', 'Add a visit!', 'Search owners']))
+    .toEqual(['add-a-visit', 'add-a-visit-2', 'search-owners']);
+  expect(uniqueSlugs(['!!!'])).toEqual(['scenario']);
+});
+
+// One file per scenario: the unit of the picture is the test, which is what a reader
+// asks for — not the class it happens to live in.
 test('what the markers reveal is filed beside the diagram, and is not itself a diagram', async () => {
   const written: Record<string, string> = {};
   renderScenarios(
@@ -50,13 +62,14 @@ test('what the markers reveal is filed beside the diagram, and is not itself a d
     {sql: 'statement', httpBodies: true, interactive: true},
   );
 
-  expect(detailsPathFor('/out', 'src/add-visit.spec.ts'))
-    .toBe('/out/src/add-visit.spec.ts.genseq.json');
-  const index = JSON.parse(written['/out/src/add-visit.spec.ts.genseq.json']);
+  expect(detailsPathFor('/out', 'src/add-visit.spec.ts', 'add-a-visit'))
+    .toBe('/out/generated/add-visit.spec.ts.add-a-visit.genseq.json');
+  const index = JSON.parse(written['/out/generated/add-visit.spec.ts.add-a-visit.genseq.json']);
   expect(index.version).toBe(DETAIL_INDEX_VERSION);
   // every id in the index is addressed by a marker in the picture beside it
   for (const id of Object.keys(index.details)) {
-    expect(written['/out/src/add-visit.spec.ts.genseq.puml']).toContain(`[[genseq://${id}{`);
+    expect(written['/out/generated/add-visit.spec.ts.add-a-visit.genseq.puml'])
+      .toContain(`[[genseq://${id}{`);
   }
 });
 
@@ -72,11 +85,40 @@ test('the static path writes the picture alone, and drops a sidecar left by an e
     {writeFile: (p, c) => { written[p] = c; }, removeFile: (p) => removed.push(p), log: () => {}},
     {sql: 'values', httpBodies: true, interactive: false},
   );
-  expect(Object.keys(written)).toEqual(['/out/src/add-visit.spec.ts.genseq.puml']);
-  expect(removed).toEqual(['/out/src/add-visit.spec.ts.genseq.json']);
+  expect(Object.keys(written)).toEqual(['/out/generated/add-visit.spec.ts.add-a-visit.genseq.puml']);
+  expect(removed).toEqual(['/out/generated/add-visit.spec.ts.add-a-visit.genseq.json']);
 });
 
-test('generateFromWindows writes one puml per source file, sectioned by scenario', async () => {
+// A rename or a deletion used to take care of itself: the one file per source was
+// rewritten whole. Per scenario, the old picture stays on disk — committed, paired with
+// the test by the review page, describing a run that no longer happens.
+test('a diagram no scenario draws any more is swept', () => {
+  const removed: string[] = [];
+  renderScenarios(
+    [{source: 'src/add-visit.spec.ts',
+      scenarios: [{title: 'Add a visit', traces: [parseTempoTrace(fixture)]}]}],
+    '/out',
+    {
+      writeFile: () => {},
+      removeFile: (p) => removed.push(p),
+      listFiles: () => [
+        'add-visit.spec.ts',
+        'add-visit.spec.ts.add-a-visit.genseq.puml',     // this run's own
+        'add-visit.spec.ts.cancel-a-visit.genseq.puml',  // a scenario that is gone
+        'add-visit.spec.ts.cancel-a-visit.genseq.json',
+        'other.spec.ts.something.genseq.puml',           // another test's, untouched
+      ],
+      log: () => {},
+    },
+    {sql: 'statement', httpBodies: true, interactive: true},
+  );
+  expect(removed).toEqual([
+    '/out/generated/add-visit.spec.ts.cancel-a-visit.genseq.puml',
+    '/out/generated/add-visit.spec.ts.cancel-a-visit.genseq.json',
+  ]);
+});
+
+test('generateFromWindows writes one puml per scenario', async () => {
   const written: Record<string, string> = {};
   const deps: GenerateDeps = {
     searchTraceIds: async () => ['t1'],
@@ -92,12 +134,19 @@ test('generateFromWindows writes one puml per source file, sectioned by scenario
   const paths = await generateFromWindows(windows, '/out', deps);
 
   expect(paths).toEqual([
-    '/out/src/add-visit.spec.ts.genseq.puml',
-    '/out/src/owner-search.feature.genseq.puml',
+    '/out/generated/add-visit.spec.ts.add-a-visit.genseq.puml',
+    '/out/generated/add-visit.spec.ts.cancel-a-visit.genseq.puml',
+    '/out/generated/owner-search.feature.search-owners.genseq.puml',
   ]);
-  const addVisit = written['/out/src/add-visit.spec.ts.genseq.puml'];
-  expect(addVisit).toContain('== Add a visit ==');
-  expect(addVisit).toContain('== Cancel a visit ==');
+  const addVisit = written['/out/generated/add-visit.spec.ts.add-a-visit.genseq.puml'];
+  // The scenario names the picture; the file it lives in is in the footer, and the
+  // divider that used to separate chapters is gone with the chapters.
+  expect(addVisit).toContain('title Add a visit');
+  expect(addVisit).not.toContain('== ');
+  // …and the other scenario is a picture of its own, not a section further down this one
+  expect(addVisit).not.toContain('Cancel a visit');
+  expect(written['/out/generated/add-visit.spec.ts.cancel-a-visit.genseq.puml'])
+    .toContain('title Cancel a visit');
   // the arrow is wrapped in its reveal link now, so match the label inside it
   expect(addVisit).toContain('addVisit\\nPOST /api/visits');
   expect(addVisit).toContain("' ⚠️  GENERATED FILE — DO NOT EDIT");
@@ -117,8 +166,8 @@ test('each section header links to the test that drew it', () => {
       log: () => {},
     },
   );
-  expect(written['/out/petclinic-test/src/add-visit.spec.ts.genseq.puml']).toContain(
-    '== [[src://petclinic-test/src/add-visit.spec.ts:1{Click to open the test} Add a visit]] ==');
+  expect(written['/out/petclinic-test/generated/add-visit.spec.ts.add-a-visit.genseq.puml']).toContain(
+    'title [[src://petclinic-test/src/add-visit.spec.ts:1{Click to open the test} Add a visit]]');
 });
 
 // Nothing to read the source with means nothing to point at: a header that links into a
@@ -130,7 +179,8 @@ test('a header stays plain when the test source cannot be read', () => {
       scenarios: [{title: 'Add a visit', traces: [parseTempoTrace(fixture)]}]}],
     '/out', {writeFile: (p, c) => { written[p] = c; }, log: () => {}},
   );
-  expect(written['/out/src/add-visit.spec.ts.genseq.puml']).toContain('== Add a visit ==');
+  expect(written['/out/generated/add-visit.spec.ts.add-a-visit.genseq.puml'])
+    .toContain('title Add a visit');
 });
 
 test('generateFromWindows skips (no throw) when a test has zero traces', async () => {
@@ -166,7 +216,7 @@ test('generateFromWindows retries a window until Tempo has ingested it', async (
   );
   expect(searches).toBe(3);
   expect(slept).toEqual([250, 250]);
-  expect(paths).toEqual(['/out/src/add-visit.spec.ts.genseq.puml']);
+  expect(paths).toEqual(['/out/generated/add-visit.spec.ts.add-a-visit.genseq.puml']);
 });
 
 test('generateFromWindows gives up after the configured number of attempts', async () => {
@@ -223,7 +273,7 @@ test('traces are ordered by the server clock, not by the browser root span', asy
     },
   );
 
-  const puml = written['/out/src/add-visit.spec.ts.genseq.puml'];
+  const puml = written['/out/generated/add-visit.spec.ts.add-a-visit.genseq.puml'];
   expect(puml.indexOf('GET /api/pets')).toBeLessThan(puml.indexOf('POST /api/visits'));
 });
 
@@ -257,8 +307,8 @@ test('renderScenarios redraws from the cache at another detail level, touching n
   renderScenarios(cached, '/out', {writeFile: (p, c) => { written[p] = c; }, log: () => {}},
     {sql: 'off', httpBodies: false, interactive: false});
 
-  const puml = written['/out/src/add-visit.spec.ts.genseq.puml'];
-  expect(puml).toContain('== Add a visit ==');
+  const puml = written['/out/generated/add-visit.spec.ts.add-a-visit.genseq.puml'];
+  expect(puml).toContain('title Add a visit');
   expect(puml).not.toContain('SELECT');
 });
 
@@ -292,8 +342,9 @@ test('an empty cache merges to just what was fetched', () => {
 test('a source outside petclinic-test is titled from the repo root, not with ../', () => {
   const written: Record<string, string> = {};
   renderScenarios(
+    // A real trace, because a scenario that draws nothing is no longer written at all.
     [{source: '../petclinic-backend/src/test/java/OwnerTest.java', scenarios: [{
-      title: 'reads an owner back', traces: [],
+      title: 'reads an owner back', traces: [parseTempoTrace(fixture)],
     }]}],
     '/repo/petclinic-test',
     {
@@ -303,8 +354,10 @@ test('a source outside petclinic-test is titled from the repo root, not with ../
       log: () => undefined,
     },
   );
+  // The title is the scenario now, so it is the FOOTER that has to name the file from
+  // the repo root — same fact, same `..` to keep out of it, one line lower.
   const puml = Object.values(written)[0];
-  expect(puml).toContain('title petclinic-backend/src/test/java/OwnerTest.java');
+  expect(puml).toContain('in petclinic-backend/src/test/java/OwnerTest.java —');
   expect(puml).not.toContain('..');
 });
 
@@ -312,7 +365,8 @@ test('a source outside petclinic-test is titled from the repo root, not with ../
 test('a petclinic-test source keeps its module-relative title', () => {
   const written: Record<string, string> = {};
   renderScenarios(
-    [{source: 'src/add-visit.spec.ts', scenarios: [{title: 'adds a visit', traces: []}]}],
+    [{source: 'src/add-visit.spec.ts',
+      scenarios: [{title: 'adds a visit', traces: [parseTempoTrace(fixture)]}]}],
     '/repo/petclinic-test',
     {
       writeFile: (p, c) => {written[p] = c;},
@@ -321,5 +375,5 @@ test('a petclinic-test source keeps its module-relative title', () => {
       log: () => undefined,
     },
   );
-  expect(Object.values(written)[0]).toContain('title src/add-visit.spec.ts');
+  expect(Object.values(written)[0]).toContain('in src/add-visit.spec.ts —');
 });

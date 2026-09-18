@@ -253,14 +253,49 @@ const REPOSITORY_SPAN_RE = /Repository\.\w+$/;
 const TRANSACTION_COMMIT = 'Transaction.commit';
 
 /** The opt-in a reader will find in the source this diagram was drawn from. */
-function optInOf(title: string): string {
-  return title.endsWith('.java') ? '@GenerateSequence' : '@generate_sequence';
+function optInOf(source: string): string {
+  return source.endsWith('.java') ? '@GenerateSequence' : '@generate_sequence';
+}
+
+/**
+ * A scenario's heading, qualified by the class it lives in — for Java, and only for Java.
+ *
+ * `remembers the vet who attended it` is a method name read back as a sentence, and a
+ * method name is only half a name: the other half is the class, which is where a Java
+ * reader looks for the scope of what is being tested. On a review page listing every
+ * picture by its heading, two classes can easily each have a `creates one` and neither
+ * line says which endpoint it is about.
+ *
+ * A `.feature` scenario or a Playwright `test(...)` title is already a whole sentence
+ * written to stand alone — `Add a visit attended by a vet` — so prefixing it with the
+ * file it happens to sit in adds a word nobody needs and takes the room the sentence uses.
+ */
+function qualifiedTitle(title: string, source: string): string {
+  if (!source.endsWith('.java')) return title;
+  const cls = source.split('/').pop()!.replace(/\.java$/, '');
+  return `${cls}: ${title}`;
 }
 
 // Left to right is the direction a call travels. Browser and Test never appear together:
 // one is a browser suite's lifeline, the other a @SpringBootTest's, and each drives the
 // backend from the same place on the page.
 const PARTICIPANT_ORDER = ['Browser', 'Test', 'Backend', 'DB'];
+
+// A lifeline whose name is not a bare identifier — `Notification module` — has to be
+// quoted, on its own `participant` line and on every arrow that touches it, or PlantUML
+// reads the first word as the whole name and chokes on the rest. Quoted only where it is
+// needed: writing `participant "Backend"` too would repaint every committed diagram, and
+// the `.puml` is diffed textually by the review page.
+//
+// The one-word names are also what the deployment guardrail matches (`\w+ -> \w+` in
+// DeploymentDiagramTest), so a multi-word lifeline is invisible to it — which is the
+// right answer for a *logical* module that ships inside the Backend container and has no
+// box of its own on a picture of what is deployed.
+const BARE_IDENTIFIER = /^[A-Za-z_]\w*$/;
+
+export function pumlName(participant: string): string {
+  return BARE_IDENTIFIER.test(participant) ? participant : `"${participant}"`;
+}
 
 function orderedParticipants(present: Set<string>): string[] {
   const ranked = PARTICIPANT_ORDER.filter((p) => present.has(p));
@@ -370,7 +405,8 @@ function emitTrace(
 
     // The baked-in notes and the click-to-reveal markers are the same fact drawn two
     // ways, so a diagram carries one or the other, never both.
-    const bodies = options.httpBodies && !options.interactive && crossing ? `${pp}, ${p}` : undefined;
+    const bodies = options.httpBodies && !options.interactive && crossing
+      ? `${pumlName(pp!)}, ${pumlName(p)}` : undefined;
 
     if (crossing) {
       present.add(pp!);
@@ -385,7 +421,7 @@ function emitTrace(
       const title = p === 'DB' ? text : `${pp} → ${p}: ${span.name}`;
       const tooltip = p === 'DB' ? SQL_TOOLTIP : BODY_TOOLTIP;
       const label = linkLabel(text, collector, title, steps, tooltip);
-      out.push(`${pp} -> ${p}: ${label}`);
+      out.push(`${pumlName(pp!)} -> ${pumlName(p)}: ${label}`);
       if (bodies) out.push(...jsonNote(bodies, bodyOf(span, parent, 'http.request.body')));
     } else {
       // a self-span (e.g. @WithSpan) whose children — DB calls, downstream
@@ -394,20 +430,20 @@ function emitTrace(
       // The one arrow with a free link slot: a crossing arrow already spends its on the
       // ⊕ that unfolds the SQL or the JSON body, and PlantUML gives a message label
       // exactly one link. So this is where the picture can point at the code.
-      out.push(`${p} -> ${p}: ${linkedMethodLabel(span.name, methodLinks(span))}`);
+      out.push(`${pumlName(p)} -> ${pumlName(p)}: ${linkedMethodLabel(span.name, methodLinks(span))}`);
     }
 
-    if (inner.length > 0) out.push(`activate ${p}`);
+    if (inner.length > 0) out.push(`activate ${pumlName(p)}`);
     out.push(...body);
     // Only a meaningful return (an HTTP status) earns an arrow back.
     const label = crossing ? returnLabel(span) : undefined;
     if (label) {
       const steps = bodySteps(bodyOf(span, parent, 'http.response.body'), 'response body', options);
-      out.push(`${p} --> ${pp}: ${
+      out.push(`${pumlName(p)} --> ${pumlName(pp!)}: ${
         linkLabel(label, collector, `${p} → ${pp}: ${label}`, steps, BODY_TOOLTIP)}`);
     }
     if (bodies) out.push(...jsonNote(bodies, bodyOf(span, parent, 'http.response.body')));
-    if (inner.length > 0) out.push(`deactivate ${p}`);
+    if (inner.length > 0) out.push(`deactivate ${pumlName(p)}`);
   };
 
   const roots = spans
@@ -485,6 +521,19 @@ export function renderDiagram(
     'skinparam hyperlinkColor #1A4FA0',
   ] : [];
 
+  // One scenario per picture is the normal case now, and then the title IS the scenario:
+  // `adds a visit to an existing pet`, clickable, straight into the test at its own line.
+  //
+  // It used to be the file path, with the scenario repeated underneath as a `== divider ==`
+  // — two headings, a hundred characters of `petclinic-backend/src/test/java/victor/…`
+  // above four words that were the thing the reader came for. The divider's job was to
+  // separate scenarios inside one file; with one scenario there is nothing to separate,
+  // and the link it carried moves up into the title rather than being lost.
+  //
+  // Several sections still draw the old way. Nothing this generator writes takes that
+  // path any more, but `renderDiagram` is a public function and a caller handing it two
+  // scenarios means two chapters, which need naming and separating.
+  const solo = sections.length === 1 ? sections[0] : undefined;
   const header = [
     '@startuml',
     // ' starts a PlantUML comment: this one warns whoever opens the *file*.
@@ -494,21 +543,26 @@ export function renderDiagram(
     `' ⚠️  GENERATED FILE — DO NOT EDIT. Every edit is lost on the next run.`,
     'hide footbox',
     ...interactiveHeader,
-    `title ${title}`,
+    `title ${solo ? linkedSectionTitle(qualifiedTitle(solo.title, title), solo.link) : title}`,
     // footer (bottom of every page) states the diagram's provenance, naming the opt-in
     // the reader will actually find in the file above: a .feature/.spec.ts carries the
     // `@generate_sequence` tag, a @SpringBootTest the `@GenerateSequence` annotation.
     // It also carries the "do not edit" warning, which used to sit in a `legend right`
     // panel: a framed box floating beside the conversation the diagram exists to show,
     // for a line that reads just as well under it.
-    `footer ${optInOf(title)} — generated from real traces of end-to-end test runs, do not edit ❗`,
-    ...orderedParticipants(present).map((p) => `participant ${p}`),
+    //
+    // …and, since the title stopped being the file, the file. A `.puml` embedded in a
+    // README or pasted into a slide is read with nothing around it to say where it came
+    // from; here it costs a few words on a line that was already there.
+    `footer ${optInOf(title)} in ${title} — generated from real traces of end-to-end `
+    + 'test runs, do not edit ❗',
+    ...orderedParticipants(present).map((p) => `participant ${pumlName(p)}`),
   ];
-  // The header is the one place the picture can say which test produced it, so it is
-  // also the place to put the link there: PlantUML renders a creole link inside a
-  // divider, and the review page resolves the handle against its own checkout.
-  const body = sections.flatMap(
-    (s) => [`== ${linkedSectionTitle(s.title, s.link)} ==`, ...s.lines]);
+  // A divider per chapter, only where there are chapters to tell apart. PlantUML renders
+  // a creole link inside one, and the review page resolves the handle against its own
+  // checkout — the same trade the title now makes.
+  const body = solo ? solo.lines : sections.flatMap(
+    (s) => [`== ${linkedSectionTitle(qualifiedTitle(s.title, title), s.link)} ==`, ...s.lines]);
   return {
     puml: [...header, ...body, '@enduml', ''].join('\n'),
     details: collector.toIndex(),
